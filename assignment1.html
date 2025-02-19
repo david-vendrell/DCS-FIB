@@ -15,8 +15,17 @@
 <canvas id="canvas1" height="600" width="400" class="bezier"  style="border:1px solid #d3d3d3;"></canvas>
 <canvas id="canvas2" height="600" width="800" class="bezier"  style="border:1px solid #d3d3d3;"></canvas>
 <br>
+<label for="translateX">Translate X:</label>
+<input type="number" id="translateX" value="0" />
+<label for="translateY">Translate Y:</label>
+<input type="number" id="translateY" value="0" />
+<label for="rotationAngle">Angle (degrees):</label>
+<input type="number" id="rotationAngle" value="0" />
+<br>
 <button type="button" onclick="doReset()">Reset</button>
 <button type="button" onclick="doScaling()">(Example) Scale by 0.5</button>
+<button type="button" onclick="doTranslation()">Translation</button>
+<button type="button" onclick="doRotation()">Rotation</button>
 
 
 <script type="text/javascript">
@@ -232,6 +241,23 @@
         return transformedPoint;
     }
 
+    var translationFunction = function (point) {
+        var tx = parseFloat(document.getElementById("translateX").value);
+        var ty = parseFloat(document.getElementById("translateY").value);
+        return { x: point.x + tx, y: point.y + ty };
+    }
+
+    var rotationFunction = function(point) {
+        var angleDeg = parseFloat(document.getElementById("rotationAngle").value);
+        var angleRad = angleDeg * Math.PI / 180;
+        var cosA = Math.cos(angleRad);
+        var sinA = Math.sin(angleRad);
+        return {
+            x: point.x * cosA - point.y * sinA,
+            y: point.x * sinA + point.y * cosA
+        };
+    }
+
     function doReset () {
         myTransformation = function(p){return p}; //Identity transform
         drawCanvas();
@@ -240,6 +266,16 @@
     // This is just an example
     function doScaling() {
         myTransformation = scalingFunction;
+        drawCanvas();
+    }
+
+    function doTranslation() {
+        myTransformation = translationFunction;
+        drawCanvas();
+    }
+
+    function doRotation() {
+        myTransformation = rotationFunction;
         drawCanvas();
     }
 
