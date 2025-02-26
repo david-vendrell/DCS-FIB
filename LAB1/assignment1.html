@@ -20,12 +20,15 @@
 <br>
 <label for="translateY">Translate Y:</label>
 <input type="number" id="translateY" value="0" />
-<button type="button" onclick="doTranslation()">Translate</button>
-<br>
 <br>
 <label for="rotationAngle">Angle (degrees):</label>
 <input type="number" id="rotationAngle" value="0" />
-<button type="button" onclick="doRotation()">Rotate</button>
+<br>
+<br>
+<button type="button" onclick="doTranslation()" style="margin-right: 10px;">Translate</button>
+<button type="button" onclick="doRotation()" style="margin-right: 10px;">Rotate</button>
+<button type="button" onclick="doTranslationAndRotation()" style="margin-right: 10px;">Translation + Rotation</button>
+<button type="button" onclick="doRotationAndTranslation()" style="margin-right: 10px;">Rotation + Translation</button>
 <br>
 <br>
 <label for="scaleX">Scale X:</label>
@@ -38,10 +41,16 @@
 <br>
 <button type="button" onclick="doReflection()">Reflect X-axis</button>
 <br>
+<label for="reflectionAngle">Reflection angle (degrees):</label>
+<input type="number" id="reflectionAngle" value="0" />
+<label for="reflectionAngleSlider">Set reflection line angle:</label>
+<input type="range" id="reflectionAngleSlider" min="0" max="180" value="0"
+  oninput="updateReflectionAngle(this.value)" />
+<button type="button" onclick="doLineReflection()">Reflect line</button>
+<br>
+<br>
 <br>
 <button type="button" onclick="doReset()">Reset</button>
-<button type="button" onclick="doScaling()">(Example) Scale by 0.5</button>
-<br>
 <br>
 
 
@@ -112,6 +121,10 @@
 
         // Transformed points
         drawCurve(context2, style, points, myTransformation); // Draw curve transformed
+
+        // Dibuja la línea de reflexión
+        var angleDeg = parseFloat(document.getElementById("reflectionAngle").value);
+        drawReflectionLine(context2, angleDeg, canvas2.width, canvas2.height);
     }
 
 
@@ -280,12 +293,6 @@
         drawCanvas();
     }
 
-    // This is just an example
-    function doScaling() {
-        myTransformation = scalingFunction;
-        drawCanvas();
-    }
-
     function doTranslation() {
         myTransformation = translationFunction;
         drawCanvas();
@@ -315,7 +322,69 @@
         drawCanvas();
     }
 
+    function doTranslationAndRotation() {
+        myTransformation = function(point) {
+            var translated = translationFunction(point);
+            return rotationFunction(translated);
+        };
+        drawCanvas();
+    }
 
+    function doRotationAndTranslation() {
+        myTransformation = function(point) {
+            var rotated = rotationFunction(point)
+            return translationFunction(rotated)
+        };
+        drawCanvas();
+    }
+
+    function doLineReflection() {
+        // 1. Rotar todo el plano para que la línea de reflexión coincida con el eje X
+        // 2. Hacer una reflexión simple sobre el eje X (invertir coordenada Y)
+        // 3. Rotar el plano de vuelta a su orientación original
+
+        var angleDeg = parseFloat(document.getElementById("reflectionAngle").value);
+        var alpha = angleDeg * Math.PI / 180;
+        var cosA = Math.cos(alpha), sinA = Math.sin(alpha);
+        
+        // Matriz para rotar el espacio para alinear la línea con el eje X
+        var Ralpha = math.matrix([[cosA, -sinA],[sinA, cosA]]);
+        
+        // Matriz para rotar de vuelta después de la reflexión
+        var Rminus = math.matrix([[cosA, sinA],[-sinA, cosA]]);
+        
+        // Matriz para reflejar respecto al eje X
+        var reflectX = math.matrix([[1,0],[0,-1]]);
+        
+        // Matriz compuesta para toda la transformación
+        var reflectionMatrix = math.multiply(Ralpha, math.multiply(reflectX, Rminus));
+
+        myTransformation = function(point) {
+            var arr = [point.x, point.y];
+            var result = math.multiply(reflectionMatrix, arr);
+            return { x: result.get([0]), y: result.get([1]) };
+        };
+        drawCanvas();
+    }
+
+    function updateReflectionAngle(value) {
+        document.getElementById("reflectionAngle").value = value;
+        drawCanvas();
+    }
+
+    function drawReflectionLine(ctx, angleDeg, w, h) {
+        var alpha = angleDeg * Math.PI / 180;
+        var slope = Math.tan(alpha);
+        var x1 = -w/2, x2 = w/2;
+        var y1 = slope * x1, y2 = slope * x2;
+        ctx.save();
+        ctx.strokeStyle = "#0000FF";
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.restore();
+    }
 
 </script>
 </body>
