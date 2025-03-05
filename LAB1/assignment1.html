@@ -49,6 +49,14 @@
 <button type="button" onclick="doLineReflection()">Reflect line</button>
 <br>
 <br>
+<label for="parallelAngle">Parallel Projection Angle (degrees):</label>
+<input type="number" id="parallelAngle" value="0" />
+<button type="button" onclick="doParallelProjection()">Parallel Projection</button>
+<br>
+<label for="centralDistance">Central Projection Distance:</label>
+<input type="number" id="centralDistance" value="500" />
+<button type="button" onclick="doCentralProjection()">Central Projection</button>
+<br>
 <br>
 <button type="button" onclick="doReset()">Reset</button>
 <br>
@@ -125,8 +133,10 @@
         // Dibuja la línea de reflexión
         var angleDeg = parseFloat(document.getElementById("reflectionAngle").value);
         drawReflectionLine(context2, angleDeg, canvas2.width, canvas2.height);
-    }
 
+        // Display coordinates of a specific point
+        displayCoordinates(points[0], myTransformation(points[0]));
+    }
 
     // Draw a background grid
     function drawGrid(myContext,bw,bh){
@@ -266,7 +276,7 @@
     var scalingFunction = function (point) {
         var matrix = math.matrix([[0.5, 0], [0, 0.5]]); //2x2 scaling matrix (for 0.5)
         var pointAsArray = [point.x, point.y];
-        var result = math.multiply(matrix,pointAsArray); // result is a matrix!
+        var result = math.multiply(matrix,pointAsArray);
         var transformedPoint = {x: result.get([0]),y: result.get([1])};
         return transformedPoint;
     }
@@ -384,6 +394,51 @@
         ctx.lineTo(x2, y2);
         ctx.stroke();
         ctx.restore();
+    }
+
+    function doParallelProjection() {
+        var angleDeg = parseFloat(document.getElementById("parallelAngle").value);
+        if (angleDeg < 0 || angleDeg > 360) {
+            alert("Parallel projection angle must be between 0 and 360 degrees.");
+            return;
+        }
+        var angleRad = angleDeg * Math.PI / 180;
+        var cosA = Math.cos(angleRad);
+        var sinA = Math.sin(angleRad);
+
+        myTransformation = function(point) {
+            return { x: point.x, y: point.x * sinA};
+        };
+        drawCanvas();
+    }
+
+    function doCentralProjection() {
+        var d = parseFloat(document.getElementById("centralDistance").value);
+        if (d <= 0) {
+            alert("Central projection distance must be greater than 0.");
+            return;
+        }
+
+        myTransformation = function(point) {
+            var factor = d / (d + point.y);
+            return { x: point.x * factor, y: point.y * factor };
+        };
+        drawCanvas();
+    }
+
+    
+    // Function to display coordinates of a point before and after transformation
+    function displayCoordinates(originalPoint, transformedPoint) {
+        var coordinatesDiv = document.getElementById("coordinates");
+        if (!coordinatesDiv) {
+            coordinatesDiv = document.createElement("div");
+            coordinatesDiv.id = "coordinates";
+            document.body.appendChild(coordinatesDiv);
+        }
+        coordinatesDiv.innerHTML = `
+            <p>Original Point: (${originalPoint.x.toFixed(2)}, ${originalPoint.y.toFixed(2)})</p>
+            <p>Transformed Point: (${transformedPoint.x.toFixed(2)}, ${transformedPoint.y.toFixed(2)})</p>
+        `;
     }
 
 </script>
