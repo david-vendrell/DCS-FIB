@@ -1,18 +1,22 @@
- <html> 
-      <head> 
-      <title>DCS - 2.1</title> 
-
-      </head>
-
-      <body>
-
-      <h1>DCS - 2.1 Elliptic helix in 3D</h1>
-
-      <script src="math.min.js"></script>
-      <script src="three.min.js"></script>
-      <script src="OrbitControlsDCS.js"></script>
-
-     <script type="text/javascript">
+<html> 
+<head> 
+    <title>DCS - 2.1</title> 
+</head>
+<body>
+    <h1>DCS - 2.1 Elliptic helix in 3D</h1>
+    <form id="parametersForm">
+        <label for="a">a:</label>
+        <input type="number" id="a" name="a" value="5">
+        <label for="b">b:</label>
+        <input type="number" id="b" name="b" value="10">
+        <label for="c">c:</label>
+        <input type="number" id="c" name="c" value="1">
+        <button type="button" onclick="updateCurve()">Update Curve</button>
+    </form>
+    <script src="math.min.js"></script>
+    <script src="three.min.js"></script>
+    <script src="OrbitControlsDCS.js"></script>
+    <script type="text/javascript">
         /**
         * Based on code by Ikaros Kappler from http://int2byte.de/public/blog.20160129_Three.js_Basic_Scene_Setup/
         **/
@@ -32,8 +36,7 @@
         document.body.appendChild(renderer.domElement);
 
         var lineGeom = new THREE.Geometry();
-
-        buildGeometry(lineGeom);
+        buildGeometry(lineGeom, 5, 10, 1); // Initial parameters
 
         var lineMat = new THREE.LineBasicMaterial( {
             color:  0xA000A0  // purple; the default is white
@@ -105,16 +108,32 @@
          *  TODO: Change this function to draw a different curve
          */
 
-        function buildGeometry(lineGeometry) {
-			var sign=1;
-            for (var i=0;i<50;i++){
-				lineGeom.vertices.push(new THREE.Vector3(0.5*i,i,sign*i));
-				sign = -sign;
+        function buildGeometry(lineGeometry, a, b, c) {
+            var points = 500; // Increased number of points
+            for (var i = 0; i < points; i++) {
+                var t = i * 0.1;
+                var x = a * Math.cos(t);
+                var y = c * t;
+                var z = b * Math.sin(t);
+                lineGeometry.vertices.push(new THREE.Vector3(x, y, z));
             }
+        }
+
+        function updateCurve() {
+            var a = parseFloat(document.getElementById('a').value);
+            var b = parseFloat(document.getElementById('b').value);
+            var c = parseFloat(document.getElementById('c').value);
+
+            lineGeom = new THREE.Geometry();
+            buildGeometry(lineGeom, a, b, c);
+
+            scene.remove(line);
+            line = new THREE.Line(lineGeom, lineMat, THREE.LineStrip);
+            scene.add(line);
         }
 	  
 	  </script>
-      <br>
-		Note: X axis is red, Y axis is green, Z axis is blue. Each grid square on the plane Y=0 has size 10x10.      </body>
-
-      </html>
+    <br>
+    Note: X axis is red, Y axis is green, Z axis is blue. Each grid square on the plane Y=0 has size 10x10.
+</body>
+</html>
