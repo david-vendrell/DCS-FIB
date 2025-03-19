@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -56,7 +55,7 @@
     // draw canvas
     function drawCanvas() {
         // Clear everything
-        context1.clearRect(0, 0, canvas1.width, canvas1.height);  // Clear canvas
+        context1.clearRect(-canvas1.width/2, -canvas1.height/2, canvas1.width, canvas1.height);  // Clear canvas
 
         // Background grids
         drawGrid(context1,canvas1.width, canvas1.height); // Draw background grid
@@ -96,22 +95,37 @@
 
     // Draws a polygonal curve 
     function drawCurve(ctx, style, points) {
+        const R = 150; // Radio del círculo fijo
+        
+        // Dibujamos el círculo fijo (opcional - para visualización)
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "blue";
+        ctx.beginPath();
+        ctx.arc(0, 0, R, 0, 2 * Math.PI);
+        ctx.stroke();
 
-        // TODO: write your code to draw the (right) curve here
+        // Dibujamos la curva hipocicloide
         ctx.lineWidth = style.curve.width;
         ctx.strokeStyle = style.curve.color;
         ctx.beginPath();
-        var firstPoint = points[0];
-        var currentPoint;
-        ctx.moveTo(firstPoint.x, firstPoint.y);
-        for (var i = 0; i < 10; i=i+0.2) {
-			// TODO: replace this by the right parametrization
-            currentPoint =  {x:50*i, y:50*math.sin(-i+0.5*Math.random())};
-            ctx.lineTo(currentPoint.x, currentPoint.y);
-            ctx.moveTo(currentPoint.x, currentPoint.y);
+        
+        const thetaMax = 2 * Math.PI; // Una revolución completa
+        const thetaStep = 0.01; // Paso pequeño para una curva suave
+        
+        // Dibujamos la curva
+        for (let theta = 0; theta <= thetaMax; theta += thetaStep) {
+            // Parametrización de la hipocicloide
+            const x = R * ((2/3) * Math.cos(theta) + (1/3) * Math.cos(2 * theta));
+            const y = R * ((2/3) * Math.sin(theta) - (1/3) * Math.sin(2 * theta));
+            
+            if (theta === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
         }
+        
         ctx.stroke();
-		
     }
 
     // Draw circles around vertices to facilitate drag and drop

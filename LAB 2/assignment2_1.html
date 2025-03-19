@@ -9,9 +9,11 @@
         <input type="number" id="a" name="a" value="5">
         <label for="b">b:</label>
         <input type="number" id="b" name="b" value="10">
-        <label for="c">c:</label>
-        <input type="number" id="c" name="c" value="1">
+        <label for="pitch">pitch:</label>
+        <input type="number" id="pitch" name="pitch" value="0.5" step="0.1">
         <button type="button" onclick="updateCurve()">Update Curve</button>
+        <button type="button" onclick="setElliptic()">Elliptic Helix</button>
+        <button type="button" onclick="setSpiral()">Spiral Helix</button>
     </form>
     <script src="math.min.js"></script>
     <script src="three.min.js"></script>
@@ -36,7 +38,8 @@
         document.body.appendChild(renderer.domElement);
 
         var lineGeom = new THREE.Geometry();
-        buildGeometry(lineGeom, 5, 10, 1); // Initial parameters
+        var isElliptic = true;
+        buildEllipticHelix(lineGeom, 5, 10, 0.5); // Initial parameters with pitch 0.5
 
         var lineMat = new THREE.LineBasicMaterial( {
             color:  0xA000A0  // purple; the default is white
@@ -108,13 +111,24 @@
          *  TODO: Change this function to draw a different curve
          */
 
-        function buildGeometry(lineGeometry, a, b, c) {
-            var points = 500; // Increased number of points
+        function buildEllipticHelix(lineGeometry, a, b, pitch) {
+            var points = 500;
             for (var i = 0; i < points; i++) {
                 var t = i * 0.1;
                 var x = a * Math.cos(t);
-                var y = c * t;
+                var y = (pitch / (2 * Math.PI)) * t; // Adjusted y using pitch
                 var z = b * Math.sin(t);
+                lineGeometry.vertices.push(new THREE.Vector3(x, y, z));
+            }
+        }
+
+        function buildSpiralHelix(lineGeometry, a, b, pitch) {
+            var points = 500;
+            for (var i = 0; i < points; i++) {
+                var t = i * 0.1;
+                var x = a * t * Math.cos(t);
+                var y = (pitch / (2 * Math.PI)) * t; // Adjusted y using pitch
+                var z = b * t * Math.sin(t);
                 lineGeometry.vertices.push(new THREE.Vector3(x, y, z));
             }
         }
@@ -122,14 +136,28 @@
         function updateCurve() {
             var a = parseFloat(document.getElementById('a').value);
             var b = parseFloat(document.getElementById('b').value);
-            var c = parseFloat(document.getElementById('c').value);
+            var pitch = parseFloat(document.getElementById('pitch').value);
 
             lineGeom = new THREE.Geometry();
-            buildGeometry(lineGeom, a, b, c);
+            if (isElliptic) {
+                buildEllipticHelix(lineGeom, a, b, pitch);
+            } else {
+                buildSpiralHelix(lineGeom, a, b, pitch);
+            }
 
             scene.remove(line);
             line = new THREE.Line(lineGeom, lineMat, THREE.LineStrip);
             scene.add(line);
+        }
+
+        function setElliptic() {
+            isElliptic = true;
+            updateCurve();
+        }
+
+        function setSpiral() {
+            isElliptic = false;
+            updateCurve();
         }
 	  
 	  </script>

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,17 +6,111 @@
 
     <!--- Math.js library, for matrix manipulation, and many other things--->
     <script src=https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.3.0/math.min.js></script>
+    <style>
+        .container {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .canvas-container {
+            flex: 0 0 600px;
+        }
+        .explanation {
+            flex: 1;
+            padding: 20px;
+            margin-left: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .explanation h2 {
+            color: #333;
+            margin-top: 0;
+        }
+        .explanation p {
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        .math {
+            font-style: italic;
+        }
+        .explanation h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        .controls {
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 
 <body>
 
 <h1>DCS - 2.2 Properties of conics</h1>
 
-<canvas id="canvas1" height="600" width="600" class="bezier"  style="border:1px solid #d3d3d3;"></canvas>
-<br>
-<button type="button" onclick="doReset()">Reset</button>
-<button type="button" onclick="computeConic()">Draw some conic</button>
-
+<div class="container">
+    <div class="canvas-container">
+        <canvas id="canvas1" height="600" width="600" class="bezier" style="border:1px solid #d3d3d3;"></canvas>
+        <br>
+        <button type="button" onclick="doReset()">Reset</button>
+        <button type="button" onclick="computeConic()">Draw Parabola</button>
+        <div class="controls">
+            <i>* El punto rojo representa el foco fijo de la parábola</i>
+        </div>
+    </div>
+    
+    <div class="explanation">
+        <h2>Propiedad de Reflexión de la Parábola</h2>
+        
+        <h3>Problema</h3>
+        <p>
+            Estamos ilustrando la propiedad de reflexión de la parábola: todos los rayos que inciden paralelamente 
+            al eje de la parábola se reflejan pasando por el foco.
+        </p>
+        
+        <h3>Justificación Matemática</h3>
+        <p>
+            Para una parábola con ecuación <span class="math">y = ax²</span>, el foco está en las coordenadas 
+            <span class="math">(0, 1/4a)</span>. 
+        </p>
+        <p>
+            Con el foco en <span class="math">(0, p)</span>, la ecuación de la parábola es 
+            <span class="math" id="parabola-equation">y = x²/200</span>, 
+            donde el parámetro p = <span id="parameter-value">50</span>.
+        </p>
+        <p>
+            Actualmente, el foco está en <span class="math" id="focus-position">(0, 50)</span>.
+        </p>
+        <p>
+            Esta propiedad se puede demostrar usando la definición geométrica de la parábola como el lugar 
+            geométrico de los puntos que equidistan de un punto (el foco) y una recta (la directriz).
+        </p>
+        
+        <h3>Lo que estamos viendo</h3>
+        <p>
+            En la visualización:
+            <ul>
+                <li>La <strong>curva negra</strong> es la parábola</li>
+                <li>El <strong>punto rojo</strong> es el foco fijo de la parábola</li>
+                <li>Las <strong>líneas azules</strong> representan rayos incidentes paralelos al eje Y</li>
+                <li>Las <strong>líneas verdes</strong> son los rayos reflejados</li>
+            </ul>
+            Observe cómo todos los rayos reflejados (verdes) siempre pasan por el foco.
+        </p>
+        
+        <h3>Aplicaciones</h3>
+        <p>
+            Esta propiedad tiene numerosas aplicaciones prácticas:
+            <ul>
+                <li>Antenas parabólicas: captan señales paralelas y las dirigen al receptor ubicado en el foco</li>
+                <li>Faros de coches: colocando una bombilla en el foco, se proyecta luz en rayos paralelos</li>
+                <li>Telescopios reflectores: capturan la luz de estrellas distantes en un punto focal</li>
+                <li>Hornos solares: concentran los rayos solares paralelos en un punto para generar calor</li>
+            </ul>
+        </p>
+    </div>
+</div>
 
 <script type="text/javascript">
 
@@ -28,9 +121,11 @@
     */
 
     var canvas1, context1, points, myTransformation, style, drag = null, draggedPoint;
+    // Variables para el foco fijo
+    var focusPoint = { x: 0, y: 50 };
 
-    // TODO replace these points but those of the corresponding conic function (on-the-fly)
-    points = [{ x:0, y:0 }];
+    // Define points for drawing
+    points = [];
 
     function init() {
 
@@ -153,16 +248,230 @@
      */
 
 
-    function doReset () {
+    function doReset() {
+        // Reset transformation
         myTransformation = function(p){return p}; //Identity transform
-        drawCanvas();
+        
+        // Clear the entire canvas
+        context1.clearRect(-canvas1.width/2, -canvas1.height/2, canvas1.width, canvas1.height);
+        
+        // Draw only the basic grid
+        drawGrid(context1, canvas1.width, canvas1.height);
+        
+        // Clear the points array if needed
+        points = [];
     }
 
-    // This is just an example
+    // Eliminar todas las funciones relacionadas con arrastrar el foco
+    function handleMouseDown(event) {
+        // Sin funcionalidad - mantener el foco estático
+    }
+
+    function handleMouseMove(event) {
+        // Sin funcionalidad - mantener el foco estático
+    }
+
+    function handleMouseUp() {
+        // Sin funcionalidad - mantener el foco estático
+    }
+
+    // Function to draw the parabola based on the position of the focus
+    function drawParabola() {
+        // Calcular parámetro p basado en la posición del foco
+        const p = focusPoint.y;
+        const a = 1/(4*p); // Coeficiente de la parábola: y = ax²
+        
+        context1.beginPath();
+        context1.lineWidth = style.curve.width;
+        context1.strokeStyle = style.curve.color;
+        
+        // Draw the parabola point by point centered at (0,0)
+        const step = 2;
+        const xMax = 300;
+        
+        for (let x = -xMax; x <= xMax; x += step) {
+            const y = a * x * x;
+            if (x === -xMax) {
+                context1.moveTo(x, y);
+            } else {
+                context1.lineTo(x, y);
+            }
+        }
+        
+        context1.stroke();
+        
+        // Marcar explícitamente el vértice de la parábola (0,0)
+        context1.beginPath();
+        context1.fillStyle = "blue";
+        context1.arc(0, 0, 4, 0, 2 * Math.PI);
+        context1.fill();
+        
+        // Etiquetar el vértice
+        context1.save();
+        context1.scale(1, -1); // Invertir para el texto
+        context1.fillStyle = "black";
+        context1.font = "14px Arial";
+        context1.fillText("Vértice (0, 0)", 10, 10);
+        context1.restore();
+    }
+
+    // Function to draw the focus of the parabola
+    function drawFocus() {
+        context1.beginPath();
+        context1.fillStyle = "red";
+        context1.arc(focusPoint.x, focusPoint.y, 8, 0, 2 * Math.PI);
+        context1.fill();
+        
+        // Añadir un borde para mejor visualización
+        context1.strokeStyle = "darkred";
+        context1.lineWidth = 2;
+        context1.stroke();
+        
+        // Label the focus
+        context1.save();
+        context1.scale(1, -1); // Flip back for text
+        context1.fillStyle = "black";
+        context1.font = "14px Arial";
+        context1.fillText(`Focus (0, ${Math.round(focusPoint.y)})`, focusPoint.x + 10, -focusPoint.y);
+        context1.restore();
+    }
+
+    // Function to draw rays and their reflections
+    function drawRaysAndReflections() {
+        const rayStartY = 280; // Start rays from top
+        const p = focusPoint.y;
+        const a = 1/(4*p); // Coeficiente de la parábola: y = ax²
+        const delta = 50; // Usar el mismo delta que la cuadrícula para alineamiento
+        
+        // Draw several vertical rays aligned with grid
+        for (let x = -250; x <= 250; x += delta) {
+            // Skip the ray at x=0 as it would go through the vertex
+            if (x === 0) continue;
+            
+            // Calculate intersection with parabola
+            const y = a * x * x;
+            const intersectionPoint = {x: x, y: y};
+            
+            // Draw incident ray (vertical)
+            context1.beginPath();
+            context1.lineWidth = 1;
+            context1.strokeStyle = "blue";
+            context1.moveTo(x, rayStartY);
+            context1.lineTo(x, y);
+            context1.stroke();
+            
+            // Calculate the reflection
+            // For vertical incident ray, we can directly connect intersection to focus
+            context1.beginPath();
+            context1.lineWidth = 1;
+            context1.strokeStyle = "green";
+            context1.moveTo(x, y);
+            context1.lineTo(focusPoint.x, focusPoint.y);
+            // Extend ray beyond focus to show it clearly
+            const dx = focusPoint.x - x;
+            const dy = focusPoint.y - y;
+            const extension = 200; // Extension length
+            const extensionX = focusPoint.x + dx/Math.sqrt(dx*dx+dy*dy) * extension;
+            const extensionY = focusPoint.y + dy/Math.sqrt(dx*dx+dy*dy) * extension;
+            context1.lineTo(extensionX, extensionY);
+            context1.stroke();
+        }
+        
+        // Dibujar una línea punteada desde el vértice hasta el foco para visualizar el eje de simetría
+        context1.beginPath();
+        context1.lineWidth = 1;
+        context1.setLineDash([5, 3]); // Línea punteada
+        context1.strokeStyle = "darkgray";
+        context1.moveTo(0, 0);
+        context1.lineTo(0, focusPoint.y);
+        context1.stroke();
+        context1.setLineDash([]); // Restaurar a línea sólida
+    }
+
+    // Draw coordinates axes for clarity
+    function drawAxes() {
+        // Dibujar ejes coordenados
+        context1.beginPath();
+        context1.lineWidth = 1.5;
+        context1.strokeStyle = "black";
+        
+        // Eje X
+        context1.moveTo(-300, 0);
+        context1.lineTo(300, 0);
+        
+        // Eje Y
+        context1.moveTo(0, -300);
+        context1.lineTo(0, 300);
+        
+        context1.stroke();
+        
+        // Etiquetas de ejes
+        context1.save();
+        context1.scale(1, -1); // Invertir para el texto
+        context1.fillStyle = "black";
+        context1.font = "12px Arial";
+        context1.fillText("X", 290, 15);
+        context1.fillText("Y", 15, -290);
+        context1.restore();
+    }
+
+    // Function to compute and draw the conic section with its properties
     function computeConic() {
-        // to something
-        alert('Code to be written!');
-        drawCanvas();
+        // Clear canvas
+        context1.clearRect(-canvas1.width/2, -canvas1.height/2, canvas1.width, canvas1.height);
+        
+        // Draw background grid
+        drawGrid(context1, canvas1.width, canvas1.height);
+        
+        // Draw coordinate axes
+        drawAxes();
+        
+        // Calcular la ecuación de la parábola basada en la posición del foco
+        const p = focusPoint.y;
+        const a = 1/(4*p);
+        const equation = `y = x²/${Math.round(1/a)}`;
+        
+        // Draw the parabola
+        drawParabola();
+        
+        // Draw the focus
+        drawFocus();
+        
+        // Draw rays and their reflections
+        drawRaysAndReflections();
+        
+        // Add explanatory text
+        context1.save();
+        context1.scale(1, -1); // Flip back for text
+        context1.fillStyle = "black";
+        context1.font = "16px Arial";
+        context1.fillText(`Parábola: ${equation}`, -280, -260);
+        context1.fillText("Vértice en (0,0)", -280, -240);
+        context1.fillText("Rayos incidentes (azul)", -280, -220);
+        context1.fillText("Rayos reflejados (verde)", -280, -200);
+        context1.fillText("* El punto rojo muestra el foco fijo", -280, -180);
+        context1.restore();
+        
+        // Actualizar texto en el panel de explicación
+        updateExplanation(p, equation);
+    }
+    
+    // Función para actualizar la explicación basada en el foco actual
+    function updateExplanation(p, equation) {
+        const explanationElement = document.getElementById("focus-position");
+        if (explanationElement) {
+            explanationElement.textContent = `(0, ${Math.round(p)})`;
+        }
+        
+        const equationElement = document.getElementById("parabola-equation");
+        if (equationElement) {
+            equationElement.textContent = equation;
+        }
+        
+        const parameterElement = document.getElementById("parameter-value");
+        if (parameterElement) {
+            parameterElement.textContent = `${Math.round(p)}`;
+        }
     }
 
 </script>
