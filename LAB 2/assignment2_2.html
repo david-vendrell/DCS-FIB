@@ -57,6 +57,12 @@
         <button type="button" onclick="computeConic()">Draw Parabola</button>
         <div class="controls">
             <i>* El punto rojo representa el foco fijo de la parábola</i>
+            <div id="canvas-info" style="margin-top: 10px; display: none;">
+                <p id="equation-text"></p>
+                <p>Vértice en (0,0)</p>
+                <p>Rayos incidentes (azul)</p>
+                <p>Rayos reflejados (verde)</p>
+            </div>
         </div>
     </div>
     
@@ -445,11 +451,7 @@
         context1.scale(1, -1); // Flip back for text
         context1.fillStyle = "black";
         context1.font = "16px Arial";
-        context1.fillText(`Parábola: ${equation}`, -280, -260);
-        context1.fillText("Vértice en (0,0)", -280, -240);
-        context1.fillText("Rayos incidentes (azul)", -280, -220);
-        context1.fillText("Rayos reflejados (verde)", -280, -200);
-        context1.fillText("* El punto rojo muestra el foco fijo", -280, -180);
+        // Se eliminan las líneas de texto explicativo del canvas
         context1.restore();
         
         // Actualizar texto en el panel de explicación
@@ -471,6 +473,16 @@
         const parameterElement = document.getElementById("parameter-value");
         if (parameterElement) {
             parameterElement.textContent = `${Math.round(p)}`;
+        }
+        
+        // Mostrar y actualizar la información en la sección de controles
+        const canvasInfo = document.getElementById("canvas-info");
+        if (canvasInfo) {
+            canvasInfo.style.display = "block";
+            const equationText = document.getElementById("equation-text");
+            if (equationText) {
+                equationText.textContent = `Parábola: ${equation}`;
+            }
         }
     }
 
