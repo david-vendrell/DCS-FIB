@@ -12,10 +12,45 @@
 
 <h1>DCS - 2.3 Curve parametrization</h1>
 
-<canvas id="canvas1" height="600" width="1000" class="bezier"  style="border:1px solid #d3d3d3;"></canvas>
-<br>
-<button id="animateBtn">Iniciar Animación</button>
-<button id="resetBtn">Reiniciar</button>
+<div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+    <div>
+        <canvas id="canvas1" height="600" width="800" class="bezier" style="border:1px solid #d3d3d3;"></canvas>
+        <br>
+        <button id="animateBtn">Start Animation</button>
+        <button id="resetBtn">Reset</button>
+    </div>
+    
+    <div style="margin-left: 20px; border: 1px solid #ccc; padding: 15px; background-color: #f9f9f9; width: 350px; height: fit-content;">
+        <h3>Implementation Strategy</h3>
+        <p>To generate the hypocycloid curve, the following strategy was implemented:</p>
+        <ol>
+            <li>Draw a fixed circle with radius R = 150</li>
+            <li>Draw a rolling circle with radius r = R/3 = 50 that rolls inside the fixed circle</li>
+            <li>Trace the trajectory of a point on the rolling circle, generating the hypocycloid</li>
+        </ol>
+        
+        <h3>Correctness Justification</h3>
+        <p>The implementation is correct because:</p>
+        <ul>
+            <li>The parametric equation used for the 3-cusped hypocycloid (deltoid) is:
+                <ul>
+                    <li>x = R * ((2/3) * cos(θ) + (1/3) * cos(2θ))</li>
+                    <li>y = R * ((2/3) * sin(θ) - (1/3) * sin(2θ))</li>
+                </ul>
+            </li>
+            <li>These equations precisely represent the trajectory of a point on a circle of radius r = R/3 
+                rolling inside a fixed circle of radius R</li>
+            <li>The animation correctly shows: 
+                <ol>
+                    <li>The fixed circle (blue)</li>
+                    <li>The rolling circle (green)</li>
+                    <li>The tracing point (red)</li>
+                    <li>The traced trajectory (black)</li>
+                </ol>
+            </li>
+        </ul>
+    </div>
+</div>
 
 <script type="text/javascript">
 
@@ -58,7 +93,7 @@
 
     function toggleAnimation() {
         animating = !animating;
-        document.getElementById('animateBtn').textContent = animating ? 'Detener Animación' : 'Iniciar Animación';
+        document.getElementById('animateBtn').textContent = animating ? 'Stop Animation' : 'Start Animation';
         
         if (animating) {
             animate();
@@ -69,7 +104,7 @@
     
     function resetAnimation() {
         animating = false;
-        document.getElementById('animateBtn').textContent = 'Iniciar Animación';
+        document.getElementById('animateBtn').textContent = 'Start Animation';
         cancelAnimationFrame(animationId);
         currentTheta = 0;
         tracePoints = [];
@@ -84,7 +119,7 @@
         if (currentTheta >= 2 * Math.PI) {
             currentTheta = 2 * Math.PI;
             animating = false;
-            document.getElementById('animateBtn').textContent = 'Iniciar Animación';
+            document.getElementById('animateBtn').textContent = 'Start Animation';
             return;
         }
         

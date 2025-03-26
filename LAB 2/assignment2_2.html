@@ -56,63 +56,87 @@
         <button type="button" onclick="doReset()">Reset</button>
         <button type="button" onclick="computeConic()">Draw Parabola</button>
         <div class="controls">
-            <i>* El punto rojo representa el foco fijo de la parábola</i>
+            <i>* The red point represents the fixed focus of the parabola</i>
             <div id="canvas-info" style="margin-top: 10px; display: none;">
                 <p id="equation-text"></p>
-                <p>Vértice en (0,0)</p>
-                <p>Rayos incidentes (azul)</p>
-                <p>Rayos reflejados (verde)</p>
+                <p>Vertex at (0,0)</p>
+                <p>Incident rays (blue)</p>
+                <p>Reflected rays (green)</p>
             </div>
         </div>
     </div>
     
     <div class="explanation">
-        <h2>Propiedad de Reflexión de la Parábola</h2>
+        <h2>Reflection Property of the Parabola</h2>
         
-        <h3>Problema</h3>
+        <h3>Problem</h3>
         <p>
-            Estamos ilustrando la propiedad de reflexión de la parábola: todos los rayos que inciden paralelamente 
-            al eje de la parábola se reflejan pasando por el foco.
+            We are illustrating the reflection property of the parabola: all rays that are incident parallel 
+            to the axis of the parabola are reflected passing through the focus.
         </p>
         
-        <h3>Justificación Matemática</h3>
+        <h3>Mathematical Justification</h3>
         <p>
-            Para una parábola con ecuación <span class="math">y = ax²</span>, el foco está en las coordenadas 
+            For a parabola with equation <span class="math">y = ax²</span>, the focus is at coordinates 
             <span class="math">(0, 1/4a)</span>. 
         </p>
         <p>
-            Con el foco en <span class="math">(0, p)</span>, la ecuación de la parábola es 
+            With the focus at <span class="math">(0, p)</span>, the equation of the parabola is 
             <span class="math" id="parabola-equation">y = x²/200</span>, 
-            donde el parámetro p = <span id="parameter-value">50</span>.
+            where the parameter p = <span id="parameter-value">50</span>.
         </p>
         <p>
-            Actualmente, el foco está en <span class="math" id="focus-position">(0, 50)</span>.
+            Currently, the focus is at <span class="math" id="focus-position">(0, 50)</span>.
         </p>
         <p>
-            Esta propiedad se puede demostrar usando la definición geométrica de la parábola como el lugar 
-            geométrico de los puntos que equidistan de un punto (el foco) y una recta (la directriz).
+            This property can be demonstrated using the geometric definition of the parabola as the locus 
+            of points that are equidistant from a point (the focus) and a line (the directrix).
         </p>
         
-        <h3>Lo que estamos viendo</h3>
+        <h3>Definition of a Parabola:</h3>
         <p>
-            En la visualización:
+            By definition, a parabola is the set of points that are at the same distance from a fixed line (the directrix) and a fixed point (the focus).
+        </p>
+        <p>
+            If you don't know the exact position of the focus, you do know that there is some line (directrix) and some point (focus) that fulfill this property of "equal distances."
+        </p>
+        
+        <h3>Why a Parallel Ray is Reflected Toward the Same Point:</h3>
+        <p>
+            When a ray (in blue) reaches the parabola, the angle of incidence (with respect to the tangent at that point) is equal to the angle of reflection.
+        </p>
+        <p>
+            The key is that the normal (perpendicular) to the parabola at each point "points" in such a way that, when reflecting a ray that comes parallel to the axis, the resulting trajectory (reflected ray) coincides with the direction toward a fixed point.
+        </p>
+        <p>
+            In other words: if you carefully measured all the angles with the directrix and with the hypothetical focus, you would see that the normal at the parabola bisects (cuts in half) the angle between the line to the focus and the line perpendicular to the directrix. This ensures that any parallel ray is reflected following the line toward the focus.
+        </p>
+        
+        <h3>Consequence:</h3>
+        <p>
+            Even if you don't know the position of the focus in advance, the very geometry of the parabola (distance to the directrix = distance to the focus) causes all parallel rays to "bounce" converging in the same place. That place is, precisely, the focus.
+        </p>
+        
+        <h3>What We Are Seeing</h3>
+        <p>
+            In the visualization:
             <ul>
-                <li>La <strong>curva negra</strong> es la parábola</li>
-                <li>El <strong>punto rojo</strong> es el foco fijo de la parábola</li>
-                <li>Las <strong>líneas azules</strong> representan rayos incidentes paralelos al eje Y</li>
-                <li>Las <strong>líneas verdes</strong> son los rayos reflejados</li>
+                <li>The <strong>black curve</strong> is the parabola</li>
+                <li>The <strong>red point</strong> is the fixed focus of the parabola</li>
+                <li>The <strong>blue lines</strong> represent incident rays parallel to the Y axis</li>
+                <li>The <strong>green lines</strong> are the reflected rays</li>
             </ul>
-            Observe cómo todos los rayos reflejados (verdes) siempre pasan por el foco.
+            Notice how all the reflected rays (green) always pass through the focus.
         </p>
         
-        <h3>Aplicaciones</h3>
+        <h3>Applications</h3>
         <p>
-            Esta propiedad tiene numerosas aplicaciones prácticas:
+            This property has numerous practical applications:
             <ul>
-                <li>Antenas parabólicas: captan señales paralelas y las dirigen al receptor ubicado en el foco</li>
-                <li>Faros de coches: colocando una bombilla en el foco, se proyecta luz en rayos paralelos</li>
-                <li>Telescopios reflectores: capturan la luz de estrellas distantes en un punto focal</li>
-                <li>Hornos solares: concentran los rayos solares paralelos en un punto para generar calor</li>
+                <li>Parabolic antennas: capture parallel signals and direct them to the receiver located at the focus</li>
+                <li>Car headlights: placing a bulb at the focus projects light in parallel rays</li>
+                <li>Reflecting telescopes: capture light from distant stars at a focal point</li>
+                <li>Solar ovens: concentrate parallel solar rays at a point to generate heat</li>
             </ul>
         </p>
     </div>
@@ -312,12 +336,12 @@
         context1.arc(0, 0, 4, 0, 2 * Math.PI);
         context1.fill();
         
-        // Etiquetar el vértice
+        // Label the vertex
         context1.save();
-        context1.scale(1, -1); // Invertir para el texto
+        context1.scale(1, -1); // Invert for text
         context1.fillStyle = "black";
         context1.font = "14px Arial";
-        context1.fillText("Vértice (0, 0)", 10, 10);
+        context1.fillText("Vertex (0, 0)", 10, 10);
         context1.restore();
     }
 
@@ -383,15 +407,15 @@
             context1.stroke();
         }
         
-        // Dibujar una línea punteada desde el vértice hasta el foco para visualizar el eje de simetría
+        // Draw a dotted line from the vertex to the focus to visualize the axis of symmetry
         context1.beginPath();
         context1.lineWidth = 1;
-        context1.setLineDash([5, 3]); // Línea punteada
+        context1.setLineDash([5, 3]); // Dotted line
         context1.strokeStyle = "darkgray";
         context1.moveTo(0, 0);
         context1.lineTo(0, focusPoint.y);
         context1.stroke();
-        context1.setLineDash([]); // Restaurar a línea sólida
+        context1.setLineDash([]); // Restore to solid line
     }
 
     // Draw coordinates axes for clarity
