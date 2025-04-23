@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,14 +6,219 @@
 
     <!--- Math.js library, for matrix manipulation, and many other things--->
     <script src=https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.3.0/math.min.js></script>
+    <style>
+        .controls {
+            margin: 10px 0;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+        }
+        .explanation-box {
+            width: 800px;
+            border: 1px solid #ccc;
+            padding: 15px;
+            background-color: #f9f9f9;
+            font-size: 14px;
+            line-height: 1.4;
+            height: 600px;
+            overflow-y: auto;
+        }
+        .canvas-container {
+            width: 800px;
+        }
+        .legend {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+            font-family: Arial, sans-serif;
+            width: 800px;
+            box-sizing: border-box;
+        }
+        .legend-item {
+            display: inline-block;
+            margin: 5px 15px 5px 0;
+            font-size: 14px;
+        }
+        .point-pos {
+            font-weight: bold;
+        }
+        .problem-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .solution-button {
+            padding: 8px 15px;
+            background-color: #4a7aac;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .solution-button:hover {
+            background-color: #3a6090;
+        }
+        .highlight {
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border: 1px solid #ddd;
+            border-radius: 2px;
+        }
+
+    </style>
 </head>
 
 <body>
 
 <h1>DCS - 3.3 Cubic Hermite interpolation</h1>
 
-<canvas id="canvas1" height="600" width="800" class="bezier"  style="border:1px solid #d3d3d3;"></canvas>
-<br>
+<div class="controls">
+    <button id="resetDemo" class="solution-button">Reset Demo</button>
+    <button id="showCase1" class="solution-button">Show Case 1</button>
+    <button id="showCase2" class="solution-button">Show Case 2</button>
+</div>
+
+<div class="container">
+    <div class="canvas-container">
+        <canvas id="canvas1" height="600" width="800" class="bezier" style="border:1px solid #d3d3d3;"></canvas>
+        <div id="legend" class="legend">
+            <h3>Coordenadas de los puntos:</h3>
+            <div id="p0" class="legend-item">P0: <span class="point-pos">(0, 0)</span></div>
+            <div id="t0" class="legend-item">T0: <span class="point-pos">(0, 0)</span></div>
+            <div id="p1" class="legend-item">P1: <span class="point-pos">(0, 0)</span></div>
+            <div id="t1" class="legend-item">T1: <span class="point-pos">(0, 0)</span></div>
+            <div id="midpoint" class="legend-item">t=0.5: <span class="point-pos">(0, 0)</span></div>
+        </div>
+    </div>
+    
+    <div class="explanation-box">
+        <h2>Cubic Hermite Interpolation</h2>
+        
+        <h3>What is Hermite Interpolation?</h3>
+        <p>
+            Hermite interpolation is a method for generating smooth curves that pass through a set of points with specified 
+            tangent vectors at those points. In this demonstration, we use cubic Hermite interpolation 
+            which requires two points (P0 and P1) and their tangent vectors (T0 and T1).
+        </p>
+        
+        <h3>Mathematical Foundation</h3>
+        <p>
+            The cubic Hermite polynomial is defined by four basis functions (or blending functions):
+        </p>
+        <ul>
+            <li>h₀₀(t) = 2t³ - 3t² + 1</li>
+            <li>h₁₀(t) = t³ - 2t² + t</li>
+            <li>h₀₁(t) = -2t³ + 3t²</li>
+            <li>h₁₁(t) = t³ - t²</li>
+        </ul>
+        <p>
+            The interpolated point at parameter t (where 0 ≤ t ≤ 1) is calculated as:
+        </p>
+        <p>
+            p(t) = h₀₀(t)·P₀ + h₁₀(t)·T₀ + h₀₁(t)·P₁ + h₁₁(t)·T₁
+        </p>
+        
+        <h3>Interactive Demo</h3>
+        <p>
+            In this interactive demo:
+        </p>
+        <ul>
+            <li><strong>Gray circles (P0, P1)</strong>: End points of the curve that can be dragged to new positions.</li>
+            <li><strong>Green circles (T0, T1)</strong>: Control points for tangent vectors at P0 and P1.</li>
+            <li><strong>Green lines</strong>: Visual representation of the tangent vectors.</li>
+            <li><strong>Blue curve</strong>: The resulting Hermite interpolation curve.</li>
+        </ul>
+        
+        <h3>Applications</h3>
+        <p>
+            Hermite interpolation is widely used in:
+        </p>
+        <ul>
+            <li>Computer graphics and animation</li>
+            <li>Path planning in robotics</li>
+            <li>CAD systems for design</li>
+            <li>Font design and character representation</li>
+            <li>Physical simulation of motion</li>
+        </ul>
+        
+        <h3>Advantages</h3>
+        <p>
+            Compared to other interpolation methods:
+        </p>
+        <ul>
+            <li>Direct control over both position and derivatives (tangents)</li>
+            <li>Local control - changing one point or tangent only affects a portion of the curve</li>
+            <li>Guarantees C¹ continuity between curve segments</li>
+            <li>Intuitive control for designers</li>
+        </ul>
+        
+        <div class="problem-section">
+            <h3>Specific Problem</h3>
+            <p>Using the Hermite interpolation, consider the particular case:</p>
+            <ul>
+                <li>P0 = (200, 200)</li>
+                <li>P1 = (400, 300)</li>
+                <li>Tangent vector v0 = (100, 100)</li>
+                <li>Tangent vector v1 = (100, 0)</li>
+            </ul>
+            
+            <h4>Question 1: Find the position at t = 1/2</h4>
+            <p>We need to compute the position of the curve at t = 1/2 using the Hermite polynomial:</p>
+            <p>p(t) = h₀₀(t)·P₀ + h₁₀(t)·v₀ + h₀₁(t)·P₁ + h₁₁(t)·v₁</p>
+            
+            <p>For t = 0.5:</p>
+            <ul>
+                <li>h₀₀(0.5) = 2(0.5)³ - 3(0.5)² + 1 = 0.25 - 0.75 + 1 = 0.5</li>
+                <li>h₁₀(0.5) = (0.5)³ - 2(0.5)² + 0.5 = 0.125 - 0.5 + 0.5 = 0.125</li>
+                <li>h₀₁(0.5) = -2(0.5)³ + 3(0.5)² = -0.25 + 0.75 = 0.5</li>
+                <li>h₁₁(0.5) = (0.5)³ - (0.5)² = 0.125 - 0.25 = -0.125</li>
+            </ul>
+            
+            <p>Therefore:</p>
+            <p>p(0.5) = 0.5·(200, 200) + 0.125·(100, 100) + 0.5·(400, 300) + (-0.125)·(100, 0)</p>
+            <p>p(0.5) = (100, 100) + (12.5, 12.5) + (200, 150) + (-12.5, 0)</p>
+            <p>p(0.5) = <span class="highlight">(300, 262.5)</span></p>
+            
+            <h4>Question 2: Modifying tangent vectors to pass through (300, 300) at t = 1/2</h4>
+            <p>We want to maintain the same directions but adjust the magnitudes of v0 and v1 to make the curve pass through (300, 300) at t = 0.5.</p>
+            
+            <p>Let's find scalars a and b such that v0' = a·v0 and v1' = b·v1:</p>
+            <p>p(0.5) = 0.5·(200, 200) + 0.125·a·(100, 100) + 0.5·(400, 300) + (-0.125)·b·(100, 0) = (300, 300)</p>
+            
+            <p>This gives us the equations:</p>
+            <p>100 + 12.5a + 200 - 12.5b = 300</p>
+            <p>100 + 12.5a + 150 + 0 = 300</p>
+            
+            <p>From the second equation:</p>
+            <p>12.5a = 50</p>
+            <p>a = 4</p>
+            
+            <p>From the first equation:</p>
+            <p>100 + 12.5·4 + 200 - 12.5b = 300</p>
+            <p>100 + 50 + 200 - 12.5b = 300</p>
+            <p>350 - 12.5b = 300</p>
+            <p>-12.5b = -50</p>
+            <p>b = 4</p>
+            
+            <p>Therefore, the modified tangent vectors are:</p>
+            <p>v0' = 4·(100, 100) = <span class="highlight">(400, 400)</span></p>
+            <p>v1' = 4·(100, 0) = <span class="highlight">(400, 0)</span></p>
+            
+            <p>Click on the "Show Case 1" button to see the original scenario and "Show Case 2" to see the modified tangent vectors.</p>
+        </div>
+    </div>
+</div>
 
 <script type="text/javascript">
 
@@ -25,18 +229,46 @@
     */
 
     var canvas1, context1, points, myTransformation, style, drag = null, draggedPoint;
+    var midPoint = { x: 0, y: 0, name: "t=0.5" }; // Punto para t=0.5
 
-    points = [{ x:300, y:300 },{ x:200, y:200 },{ x:400, y:300 },{ x:500, y:300 }];
+    // Estructura de datos para los puntos de Hermite predeterminados
+    var defaultPoints = [
+        { x: 100, y: 300, type: 'point', name: 'P0' },  // Punto P0
+        { x: 300, y: 150, type: 'tangent', name: 'T0' }, // Tangente en P0
+        { x: 500, y: 300, type: 'point', name: 'P1' },  // Punto P1
+        { x: 300, y: 450, type: 'tangent', name: 'T1' }  // Tangente en P1
+    ];
+
+    // Caso 1: P0 = (200, 200), P1 = (400, 300), v0 = (100, 100), v1 = (100, 0)
+    var case1Points = [
+        { x: 200, y: 200, type: 'point', name: 'P0' },  
+        { x: 300, y: 300, type: 'tangent', name: 'T0' }, // P0 + v0
+        { x: 400, y: 300, type: 'point', name: 'P1' },  
+        { x: 500, y: 300, type: 'tangent', name: 'T1' }  // P1 + v1
+    ];
+
+    // Caso 2: Tangentes modificadas para pasar por (300, 300) en t=0.5
+    var case2Points = [
+        { x: 200, y: 200, type: 'point', name: 'P0' },  
+        { x: 600, y: 600, type: 'tangent', name: 'T0' }, // P0 + v0' = P0 + 4*v0
+        { x: 400, y: 300, type: 'point', name: 'P1' },  
+        { x: 800, y: 300, type: 'tangent', name: 'T1' }  // P1 + v1' = P1 + 4*v1
+    ];
+
+    // Inicializar con los puntos predeterminados
+    points = JSON.parse(JSON.stringify(defaultPoints));
 
     function init() {
-
         myTransformation = function(p){return p}; //Identity transform
 
         // default styles
         style = {
             curve:	{ width: 6, color: "#333" },
+            hermite: { width: 4, color: "#009" },
             line:	{ width: 1, color: "#C00" },
-            point: { radius: 10, width: 2, color: "#900", fill: "rgba(200,200,200,0.5)", arc1: 0, arc2: 2 * Math.PI }
+            tangent: { width: 2, color: "#0C0" },
+            point: { radius: 10, width: 2, color: "#900", fill: "rgba(200,200,200,0.5)", arc1: 0, arc2: 2 * Math.PI },
+            tangentPoint: { radius: 8, width: 2, color: "#090", fill: "rgba(150,250,150,0.5)", arc1: 0, arc2: 2 * Math.PI }
         }
 
         // line style defaults
@@ -48,6 +280,12 @@
         canvas1.onmousemove = dragging;
         canvas1.onmouseup = canvas1.onmouseout = dragEnd;
 
+        // Añadir event listeners para los botones
+        document.getElementById('resetDemo').addEventListener('click', resetToDefault);
+        document.getElementById('showCase1').addEventListener('click', showCase1);
+        document.getElementById('showCase2').addEventListener('click', showCase2);
+
+        updateLegend(); // Actualizar la leyenda al iniciar
         drawCanvas();
     }
 
@@ -65,12 +303,138 @@
         // Background grids
         drawGrid(context1,canvas1.width, canvas1.height); // Draw background grid
 
-        // Curve through points and vertices
-        drawCurve(context1, style, points); // Draw curve
-        drawVertices(context1, style, points); // Draw vertices as circles
+        // Draw tangent lines
+        drawTangentLines(context1, style, points);
+        
+        // Draw the Hermite curve
+        drawHermiteCurve(context1, style, points);
+        
+        // Draw vertices as circles
+        drawVertices(context1, style, points);
+        
+        // Add labels for points
+        labelPoints(context1, points);
+        
+        // Calcular y dibujar el punto medio (t=0.5)
+        drawMidPoint(context1, style, points);
 
+        // Actualizar la leyenda con las posiciones actuales
+        updateLegend();
     }
 
+    // Función para calcular la interpolación cúbica de Hermite
+    function hermiteInterpolation(p0, t0, p1, t1, t) {
+        // Polinomios de Hermite
+        const h00 = 2*Math.pow(t, 3) - 3*Math.pow(t, 2) + 1;
+        const h10 = Math.pow(t, 3) - 2*Math.pow(t, 2) + t;
+        const h01 = -2*Math.pow(t, 3) + 3*Math.pow(t, 2);
+        const h11 = Math.pow(t, 3) - Math.pow(t, 2);
+        
+        // Calcular el punto en la curva
+        const x = h00 * p0.x + h10 * t0.x + h01 * p1.x + h11 * t1.x;
+        const y = h00 * p0.y + h10 * t0.y + h01 * p1.y + h11 * t1.y;
+        
+        return { x, y };
+    }
+
+    // Dibujar la curva de Hermite
+    function drawHermiteCurve(ctx, style, points) {
+        const p0 = points[0];
+        const t0Vector = { x: points[1].x - points[0].x, y: points[1].y - points[0].y };
+        const p1 = points[2];
+        const t1Vector = { x: points[3].x - points[2].x, y: points[3].y - points[2].y };
+        
+        ctx.beginPath();
+        ctx.lineWidth = style.hermite.width;
+        ctx.strokeStyle = style.hermite.color;
+        
+        // Dibujar la curva con muchos segmentos pequeños para una apariencia suave
+        const steps = 100;
+        let point = hermiteInterpolation(p0, t0Vector, p1, t1Vector, 0);
+        ctx.moveTo(point.x, point.y);
+        
+        for (let i = 1; i <= steps; i++) {
+            const t = i / steps;
+            point = hermiteInterpolation(p0, t0Vector, p1, t1Vector, t);
+            ctx.lineTo(point.x, point.y);
+        }
+        
+        ctx.stroke();
+    }
+
+    // Dibujar las líneas de tangente
+    function drawTangentLines(ctx, style, points) {
+        // Línea de tangente para P0
+        ctx.beginPath();
+        ctx.lineWidth = style.tangent.width;
+        ctx.strokeStyle = style.tangent.color;
+        ctx.moveTo(points[0].x, points[0].y);
+        ctx.lineTo(points[1].x, points[1].y);
+        ctx.stroke();
+        
+        // Línea de tangente para P1
+        ctx.beginPath();
+        ctx.lineWidth = style.tangent.width;
+        ctx.strokeStyle = style.tangent.color;
+        ctx.moveTo(points[2].x, points[2].y);
+        ctx.lineTo(points[3].x, points[3].y);
+        ctx.stroke();
+    }
+
+    // Agregar etiquetas a los puntos
+    function labelPoints(ctx, points) {
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "black";
+        
+        for (let i = 0; i < points.length; i++) {
+            ctx.fillText(points[i].name, points[i].x + 15, points[i].y - 10);
+        }
+    }
+
+    // Dibujar el punto medio (t=0.5)
+    function drawMidPoint(ctx, style, points) {
+        const p0 = points[0];
+        const t0Vector = { x: points[1].x - points[0].x, y: points[1].y - points[0].y };
+        const p1 = points[2];
+        const t1Vector = { x: points[3].x - points[2].x, y: points[3].y - points[2].y };
+        
+        // Calcular el punto para t=0.5
+        midPoint = hermiteInterpolation(p0, t0Vector, p1, t1Vector, 0.5);
+        
+        // Dibujar un punto especial para t=0.5
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#FF5500";
+        ctx.fillStyle = "rgba(255,85,0,0.7)";
+        ctx.beginPath();
+        ctx.arc(midPoint.x, midPoint.y, 8, 0, 2 * Math.PI, true);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Añadir etiqueta
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "#FF5500";
+        ctx.fillText("t=0.5", midPoint.x + 15, midPoint.y - 10);
+    }
+
+    // Función para actualizar la leyenda con las posiciones actuales
+    function updateLegend() {
+        for (let i = 0; i < points.length; i++) {
+            const point = points[i];
+            const elementId = point.name.toLowerCase();
+            const legendElement = document.getElementById(elementId);
+            if (legendElement) {
+                const posSpan = legendElement.querySelector('.point-pos');
+                posSpan.textContent = `(${Math.round(point.x)}, ${Math.round(point.y)})`;
+            }
+        }
+        
+        // Actualizar la posición del punto medio
+        const midpointElement = document.getElementById('midpoint');
+        if (midpointElement) {
+            const posSpan = midpointElement.querySelector('.point-pos');
+            posSpan.textContent = `(${Math.round(midPoint.x)}, ${Math.round(midPoint.y)})`;
+        }
+    }
 
     // Draw a background grid
     function drawGrid(myContext,bw,bh){
@@ -93,7 +457,6 @@
         myContext.fillStyle = "black";
         myContext.font = "12px Arial";
         myContext.fillText("(0,0)",2,12);
-
     }
 
     // Draws a polygonal curve connecting the points, after applying the given transformation
@@ -119,14 +482,15 @@
     }
 
     // Draw circles around vertices to facilitate drag and drop
-    function drawVertices (ctx, style, points) {
+    function drawVertices(ctx, style, points) {
         for (var i = 0; i < points.length; i++) {
             var p = points[i];
-            ctx.lineWidth = style.point.width;
-            ctx.strokeStyle = style.point.color;
-            ctx.fillStyle = style.point.fill;
+            ctx.lineWidth = p.type === 'point' ? style.point.width : style.tangentPoint.width;
+            ctx.strokeStyle = p.type === 'point' ? style.point.color : style.tangentPoint.color;
+            ctx.fillStyle = p.type === 'point' ? style.point.fill : style.tangentPoint.fill;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, style.point.radius, style.point.arc1, style.point.arc2, true);
+            ctx.arc(p.x, p.y, p.type === 'point' ? style.point.radius : style.tangentPoint.radius, 
+                    style.point.arc1, style.point.arc2, true);
             ctx.fill();
             ctx.stroke();
         }
@@ -160,6 +524,7 @@
             points[drag].y += e.y - draggedPoint.y;
             draggedPoint = e;
             drawCanvas();
+            updateLegend(); // Actualizar la leyenda mientras se arrastran los puntos
         }
     }
 
@@ -177,6 +542,24 @@
             x: event.pageX - canvas1.offsetLeft,
             y: event.pageY - canvas1.offsetTop
         }
+    }
+
+    // Función para resetear a los valores predeterminados
+    function resetToDefault() {
+        points = JSON.parse(JSON.stringify(defaultPoints));
+        drawCanvas();
+    }
+
+    // Función para mostrar el Caso 1
+    function showCase1() {
+        points = JSON.parse(JSON.stringify(case1Points));
+        drawCanvas();
+    }
+
+    // Función para mostrar el Caso 2
+    function showCase2() {
+        points = JSON.parse(JSON.stringify(case2Points));
+        drawCanvas();
     }
 
     /**
