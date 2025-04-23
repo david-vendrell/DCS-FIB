@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,14 +6,128 @@
 
     <!--- Math.js library, for matrix manipulation, and many other things--->
     <script src=https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.3.0/math.min.js></script>
+    <style>
+        .controls {
+            margin: 10px 0;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+        }
+        .explanation-box {
+            width: 800px;
+            border: 1px solid #ccc;
+            padding: 15px;
+            background-color: #f9f9f9;
+            font-size: 14px;
+            line-height: 1.4;
+            height: 600px;
+            overflow-y: auto;
+        }
+        .canvas-container {
+            width: 800px;
+        }
+        .legend {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 10px;
+        }
+    </style>
 </head>
 
 <body>
 
 <h1>DCS - 3.2. Runge's phenomenon</h1>
 
-<canvas id="canvas1" height="600" width="800" class="bezier"  style="border:1px solid #d3d3d3;"></canvas>
-<br>
+<div class="controls">
+    <div class="slider-container">
+        <label for="nPoints">Number of points (n): </label>
+        <input type="range" id="nPoints" min="2" max="30" value="5" oninput="updateN(this.value)">
+        <span id="nValue">5</span>
+    </div>
+</div>
+
+<div class="container">
+    <div class="canvas-container">
+        <canvas id="canvas1" height="600" width="800" class="bezier" style="border:1px solid #d3d3d3;"></canvas>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(255,0,0,0.8);"></div>
+                <span>Original function: f(x) = 1/(1+25x²)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(0,0,255,0.8);"></div>
+                <span>Lagrange interpolation polynomial</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(0,0,0,0.7);"></div>
+                <span>Connecting lines between points</span>
+            </div>
+        </div>
+    </div>
+    <div class="explanation-box">
+        <h3>Runge's Phenomenon: Explanation and Justification</h3>
+        
+        <h4>What is Runge's phenomenon?</h4>
+        <p>Runge's phenomenon is a problem that occurs in polynomial interpolation when using equidistant points. This phenomenon shows that increasing the number of points does not always improve the approximation, and can in fact significantly worsen it near the ends of the interval.</p>
+        
+        <h4>The Runge Function</h4>
+        <p>The classic function that demonstrates this phenomenon is: <br>f(x) = 1/(1+25x²)</p>
+        <p>This function is smooth but has a steep slope near x = 0.</p>
+        
+        <h4>How does this visualization work?</h4>
+        <ol>
+            <li>We generate n+1 evenly spaced points in the interval [-1, 1] using the formula: xi = 2i/n - 1</li>
+            <li>We calculate the value y = f(xi) for each point</li>
+            <li>We construct the Lagrange interpolation polynomial that passes exactly through these points</li>
+            <li>We draw both the original function (red) and the interpolation polynomial (blue)</li>
+        </ol>
+        
+        <h4>Lagrange Interpolation Algorithm</h4>
+        <p>The Lagrange polynomial is defined as:</p>
+        <p>L(x) = Σ yi · Li(x) where Li(x) = Π (x - xj)/(xi - xj) for j ≠ i</p>
+        <p>This polynomial passes exactly through all interpolation points.</p>
+        
+        <h4>Why does Runge's phenomenon occur?</h4>
+        <p>As we increase the number of equidistant points:</p>
+        <ol>
+            <li>High-degree Lagrange polynomials tend to oscillate strongly between points, especially near the ends of the interval</li>
+            <li>The maximum interpolation error grows exponentially with the degree of the polynomial</li>
+            <li>The Lebesgue constant (a measure of error) grows without bound for equidistant points</li>
+        </ol>
+        
+        <h4>Solutions to Runge's phenomenon</h4>
+        <p>There are two main strategies to avoid this problem:</p>
+        <ol>
+            <li><strong>Use non-equidistant points:</strong> Chebyshev or Gauss-Legendre nodes have higher density near the ends of the interval and minimize interpolation error</li>
+            <li><strong>Piecewise interpolation:</strong> Use low-degree polynomials (such as cubic splines) to interpolate between subsets of points</li>
+        </ol>
+        
+        <h4>Experiment</h4>
+        <p>Use the slider to vary the number of points (n) and observe:</p>
+        <ul>
+            <li>With small n (4-8), the interpolation is reasonable but not very accurate</li>
+            <li>As n increases (10-20), large oscillations appear near the ends</li>
+            <li>With very large n (>20), the oscillations become extreme and the approximation dramatically worsens</li>
+        </ul>
+    </div>
+</div>
 
 <script type="text/javascript">
 
@@ -25,37 +138,101 @@
     */
 
     var canvas1, context1, points, myTransformation, style, drag = null, draggedPoint;
+    var n = 5; // Número de puntos iniciales
+    var samplePoints = []; // Puntos de la función original
+    var interpolatedPoints = []; // Puntos del polinomio de Lagrange
 
+    // Función de Runge f(x) = 1/(1+25x²)
+    function rungeFunction(x) {
+        return 1 / (1 + 25 * x * x);
+    }
 
+    // Actualiza el valor de n y redibuja
+    function updateN(newN) {
+        n = parseInt(newN);
+        document.getElementById('nValue').textContent = n;
+        init();
+    }
+
+    // Genera puntos uniformemente espaciados en [-1, 1]
+    function generatePoints() {
+        points = [];
+        samplePoints = [];
+        
+        // Los puntos a interpolar: xi = 2i/n - 1
+        for (var i = 0; i <= n; i++) {
+            var x = 2 * i / n - 1;
+            var y = rungeFunction(x);
+            points.push({x: x, y: y});
+        }
+        
+        // Generamos puntos de muestra adicionales para dibujar la función original de forma suave
+        for (var i = 0; i <= 200; i++) {
+            var x = 2 * i / 200 - 1;
+            var y = rungeFunction(x);
+            samplePoints.push({x: x, y: y});
+        }
+        
+        // Calculamos los puntos interpolados
+        calculateInterpolatedPoints();
+    }
+    
+    // Calcula el polinomio de Lagrange para todos los puntos de muestra
+    function calculateInterpolatedPoints() {
+        interpolatedPoints = [];
+        
+        // Para cada punto de muestra, calculamos el valor interpolado
+        for (var i = 0; i <= 200; i++) {
+            var x = 2 * i / 200 - 1;
+            var y = lagrangeInterpolation(x, points);
+            interpolatedPoints.push({x: x, y: y});
+        }
+    }
+    
+    // Implementación del polinomio de Lagrange
+    function lagrangeInterpolation(x, points) {
+        var result = 0;
+        
+        for (var i = 0; i < points.length; i++) {
+            var term = points[i].y;
+            
+            for (var j = 0; j < points.length; j++) {
+                if (j !== i) {
+                    term *= (x - points[j].x) / (points[i].x - points[j].x);
+                }
+            }
+            
+            result += term;
+        }
+        
+        return result;
+    }
 
     function init() {
-
-        myTransformation = function(p){return p}; //Identity transform
+        // Transformación para ajustar la escala y posición
+        myTransformation = function(p) {
+            return {
+                x: 400 + p.x * 300, // Centrar horizontalmente y escalar
+                y: 300 - p.y * 250   // Centrar verticalmente e invertir y escalar
+            };
+        };
 
         // default styles
         style = {
             curve:	{ width: 6, color: "#333" },
             line:	{ width: 1, color: "#C00" },
-            point: { radius: 5, width: 2, color: "0", fill: "rgba(0,0,200,0.5)", arc1: 0, arc2: 2 * Math.PI }
+            point: { radius: 5, width: 2, color: "0", fill: "rgba(0,0,200,0.5)", arc1: 0, arc2: 2 * Math.PI },
+            originalCurve: { width: 2, color: "rgba(255,0,0,0.8)" },
+            interpolatedCurve: { width: 3, color: "rgba(0,0,255,0.8)" },
+            connectingLines: { width: 1, color: "rgba(0,0,0,0.7)" }
         }
 
         // line style defaults
         context1.lineCap = "round";
         context1.lineJoin = "round";
 
-        // event handlers (only canvas1)
-		/*
-        canvas1.onmousedown = dragStart;
-        canvas1.onmousemove = dragging;
-        canvas1.onmouseup = canvas1.onmouseout = dragEnd;
-		*/
-
-        // TODO: This is just a stub
-        // Generate the correct points and interpolate them
-        points = new Array();
-        for (var i=0;i<13;i++) {
-            points.push({x:100+i*50,y:500});
-        }
+        // Generar puntos
+        generatePoints();
 
         drawCanvas();
     }
@@ -72,12 +249,22 @@
         context1.clearRect(0, 0, canvas1.width, canvas1.height);  // Clear canvas
 
         // Background grids
-        drawGrid(context1,canvas1.width, canvas1.height); // Draw background grid
-
-        // Curve through points and vertices
-        drawCurve(context1, style, points); // Draw curve
+        drawGrid(context1, canvas1.width, canvas1.height); // Draw background grid
+        
+        // Dibujar ejes
+        drawAxes(context1);
+        
+        // Dibujar la función original
+        drawOriginalFunction(context1, style, samplePoints);
+        
+        // Dibujar la curva interpolada
+        drawInterpolatedCurve(context1, style, interpolatedPoints);
+        
+        // Dibujar líneas rectas entre los puntos de interpolación
+        drawConnectingLines(context1, style, points);
+        
+        // Dibujar los puntos de interpolación
         drawVertices(context1, style, points); // Draw vertices as circles
-
     }
 
 
@@ -102,7 +289,80 @@
         myContext.strokeStyle = "black";
         myContext.font = "12px Arial";
         myContext.fillText("(0,0)",2,12);
+    }
+    
+    // Dibujar ejes
+    function drawAxes(ctx) {
+        ctx.beginPath();
+        // Eje X
+        ctx.moveTo(100, 300);
+        ctx.lineTo(700, 300);
+        // Eje Y
+        ctx.moveTo(400, 50);
+        ctx.lineTo(400, 550);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "black";
+        ctx.stroke();
+        
+        // Etiquetas
+        ctx.font = "14px Arial";
+        ctx.fillText("-1", 100, 320);
+        ctx.fillText("0", 395, 320);
+        ctx.fillText("1", 700, 320);
+        ctx.fillText("1", 410, 55);
+    }
+    
+    // Dibuja la función original
+    function drawOriginalFunction(ctx, style, points) {
+        ctx.lineWidth = style.originalCurve.width;
+        ctx.strokeStyle = style.originalCurve.color;
+        ctx.beginPath();
+        
+        var firstPoint = myTransformation(points[0]);
+        ctx.moveTo(firstPoint.x, firstPoint.y);
+        
+        for (var i = 1; i < points.length; i++) {
+            var currentPoint = myTransformation(points[i]);
+            ctx.lineTo(currentPoint.x, currentPoint.y);
+        }
+        
+        ctx.stroke();
+    }
+    
+    // Dibuja la curva interpolada
+    function drawInterpolatedCurve(ctx, style, points) {
+        ctx.lineWidth = style.interpolatedCurve.width;
+        ctx.strokeStyle = style.interpolatedCurve.color;
+        ctx.beginPath();
+        
+        var firstPoint = myTransformation(points[0]);
+        ctx.moveTo(firstPoint.x, firstPoint.y);
+        
+        for (var i = 1; i < points.length; i++) {
+            var currentPoint = myTransformation(points[i]);
+            ctx.lineTo(currentPoint.x, currentPoint.y);
+        }
+        
+        ctx.stroke();
+    }
 
+    // Dibuja líneas rectas entre los puntos de interpolación
+    function drawConnectingLines(ctx, style, points) {
+        ctx.lineWidth = style.connectingLines.width;
+        ctx.strokeStyle = style.connectingLines.color;
+        ctx.beginPath();
+        
+        if (points.length < 2) return;
+        
+        var startPoint = myTransformation(points[0]);
+        ctx.moveTo(startPoint.x, startPoint.y);
+        
+        for (var i = 1; i < points.length; i++) {
+            var endPoint = myTransformation(points[i]);
+            ctx.lineTo(endPoint.x, endPoint.y);
+        }
+        
+        ctx.stroke();
     }
 
     // Draws a polygonal curve connecting the points, after applying the given transformation
@@ -130,7 +390,7 @@
     // Draw circles around vertices to facilitate drag and drop
     function drawVertices (ctx, style, points) {
         for (var i = 0; i < points.length; i++) {
-            var p = points[i];
+            var p = myTransformation(points[i]);
             ctx.lineWidth = style.point.width;
             ctx.strokeStyle = style.point.color;
             ctx.fillStyle = style.point.fill;
@@ -141,9 +401,6 @@
         }
     }
 
-    
-    
-
     /**
      * Start ("main method")
      */
@@ -153,11 +410,6 @@
     context1 = canvas1.getContext("2d");
 
     init();
-
-    /**
-     * Auxiliary functions
-     */
-
 
 </script>
 </body>
