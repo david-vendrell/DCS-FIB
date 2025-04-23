@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,13 +6,70 @@
 
     <!--- Math.js library, for matrix manipulation, and many other things--->
     <script src=https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.3.0/math.min.js></script>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: row;
+        }
+        .canvas-container {
+            flex: 0 0 800px;  /* Tamaño fijo igual al ancho del canvas */
+        }
+        .explanation {
+            flex: 1;  /* Cambiado a flex: 1 para que tome el espacio restante */
+            padding: 20px;
+            margin-left: 20px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .explanation h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        .explanation p {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+    </style>
 </head>
 
 <body>
 
 <h1>DCS - 3.1. Cubic Lagrange interpolation</h1>
 
-<canvas id="canvas1" height="600" width="800" class="bezier"  style="border:1px solid #d3d3d3;"></canvas>
+<div class="container">
+    <div class="canvas-container">
+        <canvas id="canvas1" height="600" width="800" class="bezier"  style="border:1px solid #d3d3d3;"></canvas>
+    </div>
+    <div class="explanation">
+        <h2>Lagrange Interpolation Explanation</h2>
+        
+        <p><strong>Problem Overview:</strong> This demo illustrates cubic Lagrange interpolation between four control points, using both uniform and non-uniform parameterization.</p>
+        
+        <p><strong>Lagrange Interpolation:</strong> A mathematical technique that constructs a polynomial that passes exactly through a given set of points. For n points, we get a polynomial of degree n-1.</p>
+        
+        <p><strong>What you see:</strong></p>
+        <ul>
+            <li><strong>Black Line:</strong> Straight line segments connecting the control points.</li>
+            <li><strong>Blue Curve:</strong> Lagrange interpolation using uniform parameters [0, 1/3, 2/3, 1].</li>
+            <li><strong>Orange Curve:</strong> Lagrange interpolation using non-uniform parameters based on the distance between consecutive points.</li>
+            <li><strong>Red Circles:</strong> Draggable control points. Move them to see how the curves change.</li>
+        </ul>
+        
+        <p><strong>Uniform vs. Non-uniform:</strong> With uniform parameterization, points are evenly spaced along the parameter domain. Non-uniform parameterization takes into account the actual distances between points, which often produces more natural-looking curves when points are unevenly spaced.</p>
+        
+        <p><strong>Mathematical Basis:</strong> The Lagrange basis functions Li(t) are defined as:</p>
+        <p style="font-style: italic; text-align: center;">
+            Li(t) = ∏<sub>j≠i</sub> (t - t<sub>j</sub>) / (t<sub>i</sub> - t<sub>j</sub>)
+        </p>
+        
+        <p><strong>Applications:</strong> Lagrange interpolation is used in computer graphics, animation, numerical analysis, and various scientific and engineering applications where smooth curves through specified points are needed.</p>
+    </div>
+</div>
 <br>
 
 <script type="text/javascript">
@@ -35,8 +91,10 @@
         // default styles
         style = {
             curve:	{ width: 6, color: "#333" },
-            line:	{ width: 1, color: "#C00" },
-            point: { radius: 10, width: 2, color: "#900", fill: "rgba(200,200,200,0.5)", arc1: 0, arc2: 2 * Math.PI }
+            line:	{ width: 4, color: "#000" },
+            point: { radius: 10, width: 2, color: "#900", fill: "rgba(200,200,200,0.5)", arc1: 0, arc2: 2 * Math.PI },
+            uniformCurve: { width: 3, color: "#0066CC" },
+            nonUniformCurve: { width: 3, color: "#CC6600" }
         }
 
         // line style defaults
@@ -65,12 +123,121 @@
         // Background grids
         drawGrid(context1,canvas1.width, canvas1.height); // Draw background grid
 
-        // Curve through points and vertices
-        drawCurve(context1, style, points); // Draw curve
-        drawVertices(context1, style, points); // Draw vertices as circles
-
+        // Draw the original points as vertices
+        drawVertices(context1, style, points);
+        
+        // Draw the connecting lines between original points
+        drawLines(context1, style, points);
+        
+        // Draw cubic Lagrange interpolation with uniform parameters
+        drawLagrangeInterpolation(context1, style.uniformCurve, points, true);
+        
+        // Draw cubic Lagrange interpolation with non-uniform parameters
+        drawLagrangeInterpolation(context1, style.nonUniformCurve, points, false);
+        
+        // Add legend
+        drawLegend(context1);
     }
-
+    
+    // Draw a legend to distinguish between curves
+    function drawLegend(ctx) {
+        ctx.font = "14px Arial";
+        
+        // Uniform curve legend
+        ctx.fillStyle = style.uniformCurve.color;
+        ctx.fillRect(20, 30, 20, 10);
+        ctx.fillText("Lagrange - Uniform parameters", 50, 40);
+        
+        // Non-uniform curve legend
+        ctx.fillStyle = style.nonUniformCurve.color;
+        ctx.fillRect(20, 50, 20, 10);
+        ctx.fillText("Lagrange - Non-uniform parameters", 50, 60);
+    }
+    
+    // Draw lines connecting the original points
+    function drawLines(ctx, style, points) {
+        ctx.lineWidth = style.line.width;
+        ctx.strokeStyle = style.line.color;
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        
+        for (var i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+        
+        ctx.stroke();
+    }
+    
+    // Calculate uniform parameters (t values)
+    function getUniformParameters() {
+        return [0, 1/3, 2/3, 1];
+    }
+    
+    // Calculate non-uniform parameters based on distance
+    function getNonUniformParameters(points) {
+        var distances = [0];
+        var totalDistance = 0;
+        
+        // Calculate distances between consecutive points
+        for (var i = 1; i < points.length; i++) {
+            var dx = points[i].x - points[i-1].x;
+            var dy = points[i].y - points[i-1].y;
+            var distance = Math.sqrt(dx*dx + dy*dy);
+            totalDistance += distance;
+            distances.push(totalDistance);
+        }
+        
+        // Normalize distances to range [0,1]
+        var parameters = distances.map(function(d) {
+            return d / totalDistance;
+        });
+        
+        return parameters;
+    }
+    
+    // Lagrange basis function L_i(t)
+    function lagrangeBasis(i, t, parameters) {
+        var n = parameters.length;
+        var result = 1.0;
+        
+        for (var j = 0; j < n; j++) {
+            if (j !== i) {
+                result *= (t - parameters[j]) / (parameters[i] - parameters[j]);
+            }
+        }
+        
+        return result;
+    }
+    
+    // Draw the Lagrange interpolation curve
+    function drawLagrangeInterpolation(ctx, style, points, uniform) {
+        var parameters = uniform ? getUniformParameters() : getNonUniformParameters(points);
+        
+        ctx.lineWidth = style.width;
+        ctx.strokeStyle = style.color;
+        ctx.beginPath();
+        
+        // Start from the first point
+        ctx.moveTo(points[0].x, points[0].y);
+        
+        // Draw the curve with a reasonable number of samples
+        var steps = 100;
+        for (var i = 0; i <= steps; i++) {
+            var t = i / steps;
+            var x = 0, y = 0;
+            
+            // Calculate Lagrange interpolation at parameter t
+            for (var j = 0; j < points.length; j++) {
+                var basis = lagrangeBasis(j, t, parameters);
+                x += points[j].x * basis;
+                y += points[j].y * basis;
+            }
+            
+            ctx.lineTo(x, y);
+        }
+        
+        ctx.stroke();
+    }
 
     // Draw a background grid
     function drawGrid(myContext,bw,bh){
@@ -93,7 +260,6 @@
         myContext.strokeStyle = "black";
         myContext.font = "12px Arial";
         myContext.fillText("(0,0)",2,12);
-
     }
 
     // Draws a polygonal curve connecting the points, after applying the given transformation
@@ -192,8 +358,6 @@
     /**
      * Auxiliary functions
      */
-
-
 </script>
 </body>
 </html>
