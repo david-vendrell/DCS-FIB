@@ -58,7 +58,7 @@
 <div class="controls">
     <div class="slider-container">
         <label for="nPoints">Number of points (n): </label>
-        <input type="range" id="nPoints" min="2" max="30" value="5" oninput="updateN(this.value)">
+        <input type="range" id="nPoints" min="2" max="500" value="5" oninput="updateN(this.value)">
         <span id="nValue">5</span>
     </div>
 </div>
@@ -98,7 +98,7 @@
             <li>We construct the Lagrange interpolation polynomial that passes exactly through these points</li>
             <li>We draw both the original function (red) and the interpolation polynomial (blue)</li>
         </ol>
-        
+
         <h4>Why does Runge's phenomenon occur?</h4>
         <p>As we increase the number of equidistant points:</p>
         <ol>
