@@ -61,7 +61,7 @@
         <canvas id="canvas1" height="600" width="800" class="bezier" style="border:1px solid #d3d3d3;"></canvas>
     </div>
     <div class="explanation-box">
-        <h2>Bezier Curves</h2>
+        <h2>Bézier Curves</h2>
         <p>A cubic Bezier curve is a parametric curve defined by four control points: P₀, P₁, P₂, and P₃.</p>
         
         <p>The first point (P₀) and the last point (P₃) are the endpoints of the curve. The middle points (P₁ and P₂) define the direction and shape but don't lie on the curve itself.</p>
@@ -116,6 +116,13 @@
     </div>
 </div>
 
+<div class="input-container">
+    <button id="newCurveButton">New Curve</button>
+    <button id="deleteCurveButton">Delete Last Curve</button>
+    <button id="resetButton">Reset</button>
+    <button id="toggleLinesButton">Toggle Lines</button>
+</div>
+
 <br>
 
 <script type="text/javascript">
@@ -126,9 +133,14 @@
         * http://blogs.sitepoint.com/html5-canvas-draw-bezier-curves/
     */
 
-    var canvas1, context1, points, myTransformation, style, drag = null, draggedPoint;
+    var canvas1, context1, curves, myTransformation, style, drag = null, draggedPoint;
+    var drawLines = true;
 
-    points = [{ x:100, y:300 },{ x:200, y:100 },{ x:300, y:500 },{ x:400, y:300 }];
+    // Initialize with one curve
+    curves = [{
+        points: [{ x:100, y:300 },{ x:200, y:100 },{ x:300, y:500 },{ x:400, y:300 }],
+        color: getRandomColor()
+    }];
 
     function init() {
 
@@ -136,7 +148,7 @@
 
         // default styles
         style = {
-            curve:	{ width: 2, color: "#333" },
+            curve:	{ width: 2 }, // Color is now defined per curve
             line:	{ width: 4, color: "#C00" },
             point: { radius: 10, width: 2, color: "#900", fill: "rgba(200,200,200,0.5)", arc1: 0, arc2: 2 * Math.PI }
         }
@@ -155,6 +167,12 @@
             addPoint(x, y);
         });
 
+        // Button event listeners
+        document.getElementById("newCurveButton").addEventListener("click", newCurve);
+        document.getElementById("deleteCurveButton").addEventListener("click", deleteLastCurve);
+        document.getElementById("resetButton").addEventListener("click", reset);
+        document.getElementById("toggleLinesButton").addEventListener("click", toggleLines);
+
         drawCanvas();
     }
 
@@ -172,12 +190,14 @@
         // Background grids
         drawGrid(context1,canvas1.width, canvas1.height); // Draw background grid
 
-        // Draw control lines
-        drawControlLines(context1, style, points);
-        
-        // Curve through points and vertices
-        drawCurve(context1, style, points); // Draw curve
-        drawVertices(context1, style, points); // Draw vertices as circles
+        // Draw all curves
+        for (let i = 0; i < curves.length; i++) {
+            if (drawLines) {
+                drawControlLines(context1, style, curves[i].points);
+            }
+            drawCurve(context1, style, curves[i].points, curves[i].color);
+            drawVertices(context1, style, curves[i].points);
+        }
     }
 
 
@@ -239,7 +259,7 @@
     }
 
     // Draws a cubic Bezier curve defined by the four control points
-    function drawCurve(ctx, style, points, transformation) {
+    function drawCurve(ctx, style, points, color, transformation) {
         // The transformation is optional. If none provided, use identity transform
         if (transformation===undefined) {
             transformation = function(p){return p}; //Identity transform
@@ -249,7 +269,7 @@
         if (points.length < 4) return;
 
         ctx.lineWidth = style.curve.width;
-        ctx.strokeStyle = style.curve.color;
+        ctx.strokeStyle = color; // Use the curve's color
 
         for (let i = 0; i < points.length - 3; i += 3) {
             let p0 = transformation(points[i]);
@@ -266,15 +286,17 @@
 
     // Draw circles around vertices to facilitate drag and drop
     function drawVertices (ctx, style, points) {
-        for (var i = 0; i < points.length; i++) {
-            var p = points[i];
-            ctx.lineWidth = style.point.width;
-            ctx.strokeStyle = style.point.color;
-            ctx.fillStyle = style.point.fill;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, style.point.radius, style.point.arc1, style.point.arc2, true);
-            ctx.fill();
-            ctx.stroke();
+        if (drawLines) {
+            for (var i = 0; i < points.length; i++) {
+                var p = points[i];
+                ctx.lineWidth = style.point.width;
+                ctx.strokeStyle = style.point.color;
+                ctx.fillStyle = style.point.fill;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, style.point.radius, style.point.arc1, style.point.arc2, true);
+                ctx.fill();
+                ctx.stroke();
+            }
         }
     }
 
@@ -286,14 +308,17 @@
     function dragStart(e) {
         e = mousePos(e);
         var dx, dy;
-        for (var i=0; i<points.length;i++) {
-            dx = points[i].x - e.x;
-            dy = points[i].y - e.y;
-            if ((dx * dx) + (dy * dy) < style.point.radius * style.point.radius) {
-                drag = i;
-                draggedPoint = e;
-                canvas1.style.cursor = "move";
-                return;
+        for (let j=0; j<curves.length; j++){
+            let points = curves[j].points;
+            for (var i=0; i<points.length;i++) {
+                dx = points[i].x - e.x;
+                dy = points[i].y - e.y;
+                if ((dx * dx) + (dy * dy) < style.point.radius * style.point.radius) {
+                    drag = {curveIndex: j, pointIndex: i};
+                    draggedPoint = e;
+                    canvas1.style.cursor = "move";
+                    return;
+                }
             }
         }
     }
@@ -302,8 +327,8 @@
     function dragging(e) {
         if (drag!=null) {
             e = mousePos(e);
-            points[drag].x += e.x - draggedPoint.x;
-            points[drag].y += e.y - draggedPoint.y;
+            curves[drag.curveIndex].points[drag.pointIndex].x += e.x - draggedPoint.x;
+            curves[drag.curveIndex].points[drag.pointIndex].y += e.y - draggedPoint.y;
             draggedPoint = e;
             drawCanvas();
         }
@@ -340,10 +365,47 @@
      */
 
     function addPoint(x, y) {
-        points.push({x: parseInt(x), y: parseInt(y)});
+        let currentCurve = curves[curves.length - 1]; // Add to the last curve
+        currentCurve.points.push({x: parseInt(x), y: parseInt(y)});
         drawCanvas();
     }
 
+    function newCurve() {
+        curves.push({
+            points: [],
+            color: getRandomColor()
+        });
+        drawCanvas();
+    }
+
+    function deleteLastCurve() {
+        if (curves.length > 1) {
+            curves.pop();
+            drawCanvas();
+        }
+    }
+
+    function reset() {
+        curves = [{
+            points: [{ x:100, y:300 },{ x:200, y:100 },{ x:300, y:500 },{ x:400, y:300 }],
+            color: getRandomColor()
+        }];
+        drawCanvas();
+    }
+
+    function toggleLines() {
+        drawLines = !drawLines;
+        drawCanvas();
+    }
+
+    function getRandomColor() {
+        var letters = '0123456789ABCDEF';
+        var color = '#';
+        for (var i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
 
 </script>
 </body>
