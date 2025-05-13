@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,13 +6,81 @@
 
     <!--- Math.js library, for matrix manipulation, and many other things--->
     <script src="math.min.js"></script>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .explanation-box {
+            width: 50%;
+            padding: 15px;
+            border: 1px solid #d3d3d3;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 600px;
+            overflow-y: auto;
+        }
+        .explanation-box h2 {
+            margin-top: 0;
+            color: #333;
+            font-size: 18px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+        }
+        .explanation-box p {
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .formula {
+            background-color: #f0f0f0;
+            padding: 5px;
+            border-radius: 3px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        .canvas-container {
+            width: 50%;
+        }
+    </style>
 </head>
 
 <body>
 
 <h1>DCS - 4.1. Cubic Bézier curve</h1>
 
-<canvas id="canvas1" height="600" width="800" class="bezier"  style="border:1px solid #d3d3d3;"></canvas>
+<div class="container">
+    <div class="canvas-container">
+        <canvas id="canvas1" height="600" width="800" class="bezier" style="border:1px solid #d3d3d3;"></canvas>
+    </div>
+    <div class="explanation-box">
+        <h2>Bezier Curves</h2>
+        <p>A cubic Bezier curve is a parametric curve defined by four control points: P₀, P₁, P₂, and P₃.</p>
+        
+        <p>The first point (P₀) and the last point (P₃) are the endpoints of the curve. The middle points (P₁ and P₂) define the direction and shape but don't lie on the curve itself.</p>
+        
+        <p>The mathematical formula for a cubic Bezier curve is:</p>
+        <div class="formula">
+            B(t) = (1-t)³P₀ + 3(1-t)²tP₁ + 3(1-t)t²P₂ + t³P₃
+        </div>
+        
+        <p>where t is a parameter that ranges from 0 to 1.</p>
+        
+        <p>Properties:</p>
+        <ul>
+            <li>When t=0, B(0) = P₀</li>
+            <li>When t=1, B(1) = P₃</li>
+            <li>The curve is always contained within the convex hull of its control points</li>
+            <li>The curve is tangent to P₀P₁ at P₀ and to P₂P₃ at P₃</li>
+        </ul>
+        
+        <p>Try dragging the control points to see how they affect the shape of the curve!</p>
+    </div>
+</div>
 <br>
 
 <script type="text/javascript">
@@ -26,7 +93,7 @@
 
     var canvas1, context1, points, myTransformation, style, drag = null, draggedPoint;
 
-    points = [{ x:100, y:300 },{ x:200, y:300 },{ x:300, y:300 },{ x:400, y:300 }];
+    points = [{ x:100, y:300 },{ x:200, y:100 },{ x:300, y:500 },{ x:400, y:300 }];
 
     function init() {
 
@@ -34,8 +101,8 @@
 
         // default styles
         style = {
-            curve:	{ width: 6, color: "#333" },
-            line:	{ width: 1, color: "#C00" },
+            curve:	{ width: 2, color: "#333" },
+            line:	{ width: 4, color: "#C00" },
             point: { radius: 10, width: 2, color: "#900", fill: "rgba(200,200,200,0.5)", arc1: 0, arc2: 2 * Math.PI }
         }
 
@@ -65,10 +132,12 @@
         // Background grids
         drawGrid(context1,canvas1.width, canvas1.height); // Draw background grid
 
+        // Draw control lines
+        drawControlLines(context1, style, points);
+        
         // Curve through points and vertices
         drawCurve(context1, style, points); // Draw curve
         drawVertices(context1, style, points); // Draw vertices as circles
-
     }
 
 
@@ -96,25 +165,67 @@
 
     }
 
-    // Draws a polygonal curve connecting the points, after applying the given transformation
+    // Calculate a point on a cubic Bezier curve at time t
+    function cubicBezier(p0, p1, p2, p3, t) {
+        // B(t) = (1-t)³P₀ + 3(1-t)²tP₁ + 3(1-t)t²P₂ + t³P₃
+        var cx = 3 * (p1.x - p0.x);
+        var bx = 3 * (p2.x - p1.x) - cx;
+        var ax = p3.x - p0.x - cx - bx;
+        
+        var cy = 3 * (p1.y - p0.y);
+        var by = 3 * (p2.y - p1.y) - cy;
+        var ay = p3.y - p0.y - cy - by;
+        
+        var t2 = t * t;
+        var t3 = t2 * t;
+        
+        return {
+            x: ax * t3 + bx * t2 + cx * t + p0.x,
+            y: ay * t3 + by * t2 + cy * t + p0.y
+        };
+    }
+
+    // Draw control lines connecting the points
+    function drawControlLines(ctx, style, points) {
+        ctx.lineWidth = style.line.width;
+        ctx.strokeStyle = style.line.color;
+        
+        // Draw line between point 0 and point 1
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        ctx.lineTo(points[1].x, points[1].y);
+        ctx.stroke();
+        
+        // Draw line between point 2 and point 3
+        ctx.beginPath();
+        ctx.moveTo(points[2].x, points[2].y);
+        ctx.lineTo(points[3].x, points[3].y);
+        ctx.stroke();
+    }
+
+    // Draws a cubic Bezier curve defined by the four control points
     function drawCurve(ctx, style, points, transformation) {
         // The transformation is optional. If none provided, use identity transform
         if (transformation===undefined) {
             transformation = function(p){return p}; //Identity transform
         }
 
+        // We need exactly 4 points for a cubic Bezier
+        if (points.length !== 4) return;
+
+        var p0 = transformation(points[0]);
+        var p1 = transformation(points[1]);
+        var p2 = transformation(points[2]);
+        var p3 = transformation(points[3]);
+
         // Draw curve
         ctx.lineWidth = style.curve.width;
         ctx.strokeStyle = style.curve.color;
         ctx.beginPath();
-        var firstPoint = transformation(points[0]);
-        var currentPoint;
-        ctx.moveTo(firstPoint.x, firstPoint.y);
-        for (var i = 0; i < points.length; i++) {
-            currentPoint =  transformation(points[i]);
-            ctx.lineTo(currentPoint.x, currentPoint.y);
-            ctx.moveTo(currentPoint.x, currentPoint.y);
-        }
+        ctx.moveTo(p0.x, p0.y);
+        
+        // Draw Bezier curve
+        ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
         ctx.stroke();
     }
 
