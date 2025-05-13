@@ -46,6 +46,9 @@
         .canvas-container {
             width: 50%;
         }
+        .input-container {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 
@@ -77,10 +80,42 @@
             <li>The curve is always contained within the convex hull of its control points</li>
             <li>The curve is tangent to P₀P₁ at P₀ and to P₂P₃ at P₃</li>
         </ul>
+
+        <h2>Composite Bezier Curves</h2>
+
+        <p>This program allows you to add new control points by double-clicking on the canvas, creating a composite Bézier curve.</p>
+
+        <p>A composite Bézier curve is a series of joined cubic Bézier curves. To draw a single cubic Bézier curve, you need 4 control points. Therefore, to see a new curve segment after the initial four points, you need to add 3 more points.</p>
+
+        <p>The first four points define the first curve. The next three points define the second curve, and so on.  If you add only one or two points after the initial four, you won't see a new curve segment because the program needs three additional points to define the next cubic Bézier curve.</p>
         
         <p>Try dragging the control points to see how they affect the shape of the curve!</p>
+
+        <h2>C1 Continuity</h2>
+        <p>
+            C1 continuity means that the curves are not only connected (C0 continuity) but also have the same tangent direction at the point where they join. This ensures a smooth transition between the curve segments, without any abrupt changes in direction.
+        </p>
+
+        <p>
+            In this implementation, C1 continuity is achieved by reflecting the control point of the previous curve segment across the joining point to determine the placement of the new control point.
+        </p>
+
+        <p>
+            For example, suppose you have the points P0, P1, P2, and P3 defining the first Bézier curve. When you add a new point (let's call it P4) by double-clicking, the algorithm calculates the new control point P1' such that P3 is the midpoint between P2 and P1'. This ensures that the tangent at P3 is the same for both the curve segment ending at P3 and the curve segment starting at P3.
+        </p>
+
+        <p>
+            Mathematically, if P3 is the last point added and P2 is the second to last point, the new control point P1' is calculated as follows:
+            <br>
+            P1' = P3 + (P3 - P2) = 2*P3 - P2
+        </p>
+
+        <p>
+            The new points added are P1', P4_control, and P4.
+        </p>
     </div>
 </div>
+
 <br>
 
 <script type="text/javascript">
@@ -114,6 +149,11 @@
         canvas1.onmousedown = dragStart;
         canvas1.onmousemove = dragging;
         canvas1.onmouseup = canvas1.onmouseout = dragEnd;
+        canvas1.addEventListener('dblclick', function(event) {
+            var x = event.pageX - canvas1.offsetLeft;
+            var y = event.pageY - canvas1.offsetTop;
+            addPoint(x, y);
+        });
 
         drawCanvas();
     }
@@ -189,18 +229,13 @@
     function drawControlLines(ctx, style, points) {
         ctx.lineWidth = style.line.width;
         ctx.strokeStyle = style.line.color;
-        
-        // Draw line between point 0 and point 1
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-        ctx.lineTo(points[1].x, points[1].y);
-        ctx.stroke();
-        
-        // Draw line between point 2 and point 3
-        ctx.beginPath();
-        ctx.moveTo(points[2].x, points[2].y);
-        ctx.lineTo(points[3].x, points[3].y);
-        ctx.stroke();
+
+        for (let i = 0; i < points.length - 1; i++) {
+            ctx.beginPath();
+            ctx.moveTo(points[i].x, points[i].y);
+            ctx.lineTo(points[i + 1].x, points[i + 1].y);
+            ctx.stroke();
+        }
     }
 
     // Draws a cubic Bezier curve defined by the four control points
@@ -210,23 +245,23 @@
             transformation = function(p){return p}; //Identity transform
         }
 
-        // We need exactly 4 points for a cubic Bezier
-        if (points.length !== 4) return;
+        // We need at least 4 points to draw a cubic Bezier
+        if (points.length < 4) return;
 
-        var p0 = transformation(points[0]);
-        var p1 = transformation(points[1]);
-        var p2 = transformation(points[2]);
-        var p3 = transformation(points[3]);
-
-        // Draw curve
         ctx.lineWidth = style.curve.width;
         ctx.strokeStyle = style.curve.color;
-        ctx.beginPath();
-        ctx.moveTo(p0.x, p0.y);
-        
-        // Draw Bezier curve
-        ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
-        ctx.stroke();
+
+        for (let i = 0; i < points.length - 3; i += 3) {
+            let p0 = transformation(points[i]);
+            let p1 = transformation(points[i + 1]);
+            let p2 = transformation(points[i + 2]);
+            let p3 = transformation(points[i + 3]);
+
+            ctx.beginPath();
+            ctx.moveTo(p0.x, p0.y);
+            ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+            ctx.stroke();
+        }
     }
 
     // Draw circles around vertices to facilitate drag and drop
@@ -303,6 +338,11 @@
     /**
      * Auxiliary functions
      */
+
+    function addPoint(x, y) {
+        points.push({x: parseInt(x), y: parseInt(y)});
+        drawCanvas();
+    }
 
 
 </script>
