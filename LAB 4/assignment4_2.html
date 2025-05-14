@@ -33,7 +33,8 @@ Save control points: <button type="button" onclick="doSave()">Save</button>
 
     var canvas1, context1, curves, myTransformation, style, drag = null, draggedPoint;
     var drawLines = true;
-
+    var drawPoints = true; // Nueva variable para controlar la visibilidad de los puntos
+	
 	var letter = 'D'; // Your letter goes here
 	
     // Convertir los puntos existentes a nuestro nuevo formato de curvas
@@ -106,11 +107,14 @@ Save control points: <button type="button" onclick="doSave()">Save</button>
 
             // Draw Bezier curves and vertices
             drawBezierCurves(context1, style, curves[i].points, curves[i].color); 
-            drawVertices(context1, style, curves[i].points);
+            
+            // Solo dibujar los vértices si drawPoints es true
+            if (drawPoints) {
+                drawVertices(context1, style, curves[i].points);
+            }
         }
     }
-
-
+    
     // Draw a background grid
     function drawGrid(myContext,bw,bh){
         var delta = 50; // grid cell size
@@ -336,6 +340,7 @@ Save control points: <button type="button" onclick="doSave()">Save</button>
     // Toggle control lines visibility
     function toggleLines() {
         drawLines = !drawLines;
+        drawPoints = !drawPoints; // También alternar la visibilidad de los puntos
         drawCanvas();
     }
 
