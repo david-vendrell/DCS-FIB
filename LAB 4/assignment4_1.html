@@ -256,7 +256,7 @@
 
     // Draws a cubic Bezier curve defined by the four control points
     function drawCurve(ctx, style, points, color, transformation) {
-        // The transformation is optional. If none provided, use identity transform
+
         if (transformation===undefined) {
             transformation = function(p){return p}; //Identity transform
         }
