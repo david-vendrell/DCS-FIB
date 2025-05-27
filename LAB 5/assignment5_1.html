@@ -1,40 +1,7 @@
 <html> 
       <head> 
       <title>DCS - 5</title> 
-      <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            display: flex;
-            width: 100%;
-        }
-        .canvas-container {
-            flex: 1;
-            min-width: 800px;
-        }
-        .sidebar {
-            width: 500px;
-            padding: 20px;
-            background-color: #f5f5f5;
-            border-left: 1px solid #ddd;
-            height: 600px;
-            overflow-y: auto;
-        }
-        h1 {
-            padding: 10px;
-            margin-bottom: 0;
-        }
-        .control-point {
-            font-family: monospace;
-            margin-bottom: 5px;
-        }
-        .math-formula {
-            font-family: serif;
-            margin: 10px 0;
-        }
-      </style>
+      
       </head>
 
       <body>
@@ -44,31 +11,6 @@
       <div class="container">
         <div class="canvas-container" id="canvas-container">
             <!-- Three.js canvas will be appended here -->
-        </div>
-        <div class="sidebar">
-            <h3>Justificación del Problema</h3>
-            <p>Este programa renderiza una superficie de Bézier de grado 3×3 utilizando los siguientes puntos de control:</p>
-            
-            <h4>Puntos de Control:</h4>
-            <div class="control-point">{Pi,0} = {(0,0,0), (3,0,3), (6,0,3), (9,0,0)}</div>
-            <div class="control-point">{Pi,1} = {(0,2,2), (3,2,5), (6,2,5), (9,2,2)}</div>
-            <div class="control-point">{Pi,2} = {(0,4,0), (3,4,3), (6,4,3), (9,4,0)}</div>
-            <div class="control-point">{Pi,3} = {(0,6,6), (3,6,5), (6,6,3), (9,6,2)}</div>
-            
-            <h4>Fórmula de la Superficie de Bézier:</h4>
-            <div class="math-formula">
-                P(u,v) = Σ<sub>i=0</sub><sup>3</sup> Σ<sub>j=0</sub><sup>3</sup> P<sub>i,j</sub>B<sub>i</sub>(u)B<sub>j</sub>(v)
-            </div>
-            
-            <p>Donde B<sub>i</sub>(t) son los polinomios de Bernstein:</p>
-            <div class="math-formula">
-                B<sub>0</sub>(t) = (1-t)<sup>3</sup><br>
-                B<sub>1</sub>(t) = 3t(1-t)<sup>2</sup><br>
-                B<sub>2</sub>(t) = 3t<sup>2</sup>(1-t)<br>
-                B<sub>3</sub>(t) = t<sup>3</sup>
-            </div>
-            
-            <p>La superficie se ha centrado en el origen y escalado por un factor de 3 para mejorar la visualización.</p>
         </div>
       </div>
       
@@ -236,6 +178,51 @@
 		
 	  </script>
       <br>
+      <div style="position: absolute; top: 100px; right: 20px; width: 700px; background-color: rgba(255, 255, 255, 0.8); padding: 20px; border-radius: 10px; border: 1px solid #ccc; font-size: 14px; max-height: 80%; overflow-y: auto;">
+        <h2 style="margin-top: 0;">Bézier Surface Implementation</h2>
+        
+        <h3>Overview:</h3>
+        <p>This application demonstrates a 3×3 bicubic Bézier surface defined by a 4×4 grid of control points. The surface is scaled and centered for better visualization.</p>
+        
+        <h3>Control Points:</h3>
+        <p>The surface is defined by the following grid of control points:</p>
+        <div style="font-family: monospace; margin-left: 20px;">
+          P<sub>0,0</sub> = (0,0,0), P<sub>0,1</sub> = (0,2,2), P<sub>0,2</sub> = (0,4,0), P<sub>0,3</sub> = (0,6,6)<br>
+          P<sub>1,0</sub> = (3,0,3), P<sub>1,1</sub> = (3,2,5), P<sub>1,2</sub> = (3,4,3), P<sub>1,3</sub> = (3,6,5)<br>
+          P<sub>2,0</sub> = (6,0,3), P<sub>2,1</sub> = (6,2,5), P<sub>2,2</sub> = (6,4,3), P<sub>2,3</sub> = (6,6,3)<br>
+          P<sub>3,0</sub> = (9,0,0), P<sub>3,1</sub> = (9,2,2), P<sub>3,2</sub> = (9,4,0), P<sub>3,3</sub> = (9,6,2)
+        </div>
+        
+        <h3>Mathematical Formulation:</h3>
+        <p>The Bézier surface is calculated using the formula:</p>
+        <p style="text-align: center;">P(u,v) = Σ<sub>i=0</sub><sup>3</sup> Σ<sub>j=0</sub><sup>3</sup> P<sub>i,j</sub>B<sub>i</sub><sup>3</sup>(u)B<sub>j</sub><sup>3</sup>(v)</p>
+        
+        <p>Where B<sub>i</sub><sup>n</sup>(t) are the Bernstein basis polynomials of degree n:</p>
+        <p style="text-align: center;">B<sub>i</sub><sup>n</sup>(t) = (n choose i)t<sup>i</sup>(1-t)<sup>n-i</sup></p>
+        
+        <p>For our cubic case (n=3), the polynomials are:</p>
+        <div style="margin-left: 20px;">
+          B<sub>0</sub><sup>3</sup>(t) = (1-t)<sup>3</sup><br>
+          B<sub>1</sub><sup>3</sup>(t) = 3t(1-t)<sup>2</sup><br>
+          B<sub>2</sub><sup>3</sup>(t) = 3t<sup>2</sup>(1-t)<br>
+          B<sub>3</sub><sup>3</sup>(t) = t<sup>3</sup>
+        </div>
+        
+        <h3>Implementation Details:</h3>
+        <ul>
+          <li>The surface is evaluated on the domain [0,1]×[0,1]</li>
+          <li>The surface is scaled by a factor of 3 for better visualization</li>
+          <li>The surface is centered relative to the control points' bounding box</li>
+          <li>Resolution: The surface is sampled with ${functionExtent/3} × ${functionExtent/3} segments</li>
+        </ul>
+        
+        <h3>Properties of Bézier Surfaces:</h3>
+        <ul>
+          <li><strong>Convex Hull Property:</strong> The surface lies entirely within the convex hull of its control points</li>
+          <li><strong>Affine Invariance:</strong> Transforming the control points and then evaluating the surface gives the same result as evaluating first and then transforming</li>
+          <li><strong>Endpoint Interpolation:</strong> The surface passes through the four corner control points: P<sub>0,0</sub>, P<sub>0,3</sub>, P<sub>3,0</sub>, and P<sub>3,3</sub></li>
+        </ul>
+      </div>
       </body>
 
       </html>
