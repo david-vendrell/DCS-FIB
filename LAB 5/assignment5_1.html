@@ -1,16 +1,86 @@
- <html> 
+<html> 
       <head> 
       <title>DCS - 5</title> 
-
+      <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            width: 100%;
+        }
+        .canvas-container {
+            flex: 1;
+            min-width: 800px;
+        }
+        .sidebar {
+            width: 500px;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-left: 1px solid #ddd;
+            height: 600px;
+            overflow-y: auto;
+        }
+        h1 {
+            padding: 10px;
+            margin-bottom: 0;
+        }
+        .control-point {
+            font-family: monospace;
+            margin-bottom: 5px;
+        }
+        .math-formula {
+            font-family: serif;
+            margin: 10px 0;
+        }
+      </style>
       </head>
 
       <body>
 
       <h1>DCS - Lab 5 - Surfaces</h1>
 
+      <div class="container">
+        <div class="canvas-container" id="canvas-container">
+            <!-- Three.js canvas will be appended here -->
+        </div>
+        <div class="sidebar">
+            <h3>Justificación del Problema</h3>
+            <p>Este programa renderiza una superficie de Bézier de grado 3×3 utilizando los siguientes puntos de control:</p>
+            
+            <h4>Puntos de Control:</h4>
+            <div class="control-point">{Pi,0} = {(0,0,0), (3,0,3), (6,0,3), (9,0,0)}</div>
+            <div class="control-point">{Pi,1} = {(0,2,2), (3,2,5), (6,2,5), (9,2,2)}</div>
+            <div class="control-point">{Pi,2} = {(0,4,0), (3,4,3), (6,4,3), (9,4,0)}</div>
+            <div class="control-point">{Pi,3} = {(0,6,6), (3,6,5), (6,6,3), (9,6,2)}</div>
+            
+            <h4>Fórmula de la Superficie de Bézier:</h4>
+            <div class="math-formula">
+                P(u,v) = Σ<sub>i=0</sub><sup>3</sup> Σ<sub>j=0</sub><sup>3</sup> P<sub>i,j</sub>B<sub>i</sub>(u)B<sub>j</sub>(v)
+            </div>
+            
+            <p>Donde B<sub>i</sub>(t) son los polinomios de Bernstein:</p>
+            <div class="math-formula">
+                B<sub>0</sub>(t) = (1-t)<sup>3</sup><br>
+                B<sub>1</sub>(t) = 3t(1-t)<sup>2</sup><br>
+                B<sub>2</sub>(t) = 3t<sup>2</sup>(1-t)<br>
+                B<sub>3</sub>(t) = t<sup>3</sup>
+            </div>
+            
+            <p>La superficie se ha centrado en el origen y escalado por un factor de 3 para mejorar la visualización.</p>
+        </div>
+      </div>
+      
+      <br>
+      <div style="padding: 0 10px;">
+          Note: X axis is red, Y axis is green, Z axis is blue.
+          Each grid square on the plane Y=0 has size 10x10.
+      </div>
+
       <script src="math.min.js"></script>
-	  <script src="three.min.js"></script>
-	  <script src="OrbitControlsDCS.js"></script>
+      <script src="three.min.js"></script>
+      <script src="OrbitControlsDCS.js"></script>
     
      <script type="text/javascript">
         /**
@@ -29,7 +99,7 @@
         this.renderer = new THREE.WebGLRenderer( { antialias : true, alpha:true } );
         this.shadowMapEnabled = true;
         this.renderer.setSize(windowWidth, windowHeight);
-        document.body.appendChild(renderer.domElement); // append it to the DOM
+        document.getElementById('canvas-container').appendChild(renderer.domElement); // append it to our container
 		
         // position and point the camera to the center of the scene (0,0,0)
         camera.position.x = 50;
@@ -53,60 +123,78 @@
 		//    for u=0 to 1  step...
 		//        call function(u,v)		
 		
-		planeFunction = function(u, v) 
-		{
-			var s = this.functionExtent; //stretch value
-			var x = s*u;
-			var z = s*v;
-			var y = 15*(u+v);
-			return new THREE.Vector3(x, y, z);
-		};
-		
-		waveFunction = function (u, v) {
-            var s = this.functionExtent; //stretch value
-            var x = s*u;
-			var z = s*v;
-            var y = 10*Math.sin(2*(u+v)*Math.PI);
-            return new THREE.Vector3(x, y, z);
-		}
-		
-		ellipsoidFunction = function (u, v) {
-			var a=40;
-			var b=20;
-			var c=30;
-			u = u * 2* Math.PI; // scale u to [0, 2PI]
-			v = v * Math.PI; // scale v to [0, PI]
-            var x = a*Math.cos(u)*Math.sin(v);
-			var z = b*Math.sin(u)*Math.sin(v);
-            var y = c*Math.cos(v);
-            return new THREE.Vector3(x, y, z);
-		}
-		
-		// Function to create the actual mesh
-        function createMesh(geom) {
-			// Translate geometry to center of scene
-            geom.applyMatrix(new THREE.Matrix4().makeTranslation(-functionExtent/2, 0, -functionExtent/2));
-            // Assign material
-            var meshMaterial = new THREE.MeshLambertMaterial({color:0xff5555, wireframe:false}); // You can disable wireframe
-            meshMaterial.side = THREE.DoubleSide;
-            // create a multimaterial and return it
-            return THREE.SceneUtils.createMultiMaterialObject(geom, [meshMaterial]);
+		// 4×4 control‐point grid P[i][j]
+        var controlPoints = [
+        [ new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 2, 2), new THREE.Vector3(0, 4, 0), new THREE.Vector3(0, 6, 6) ],
+        [ new THREE.Vector3(3, 0, 3), new THREE.Vector3(3, 2, 5), new THREE.Vector3(3, 4, 3), new THREE.Vector3(3, 6, 5) ],
+        [ new THREE.Vector3(6, 0, 3), new THREE.Vector3(6, 2, 5), new THREE.Vector3(6, 4, 3), new THREE.Vector3(6, 6, 3) ],
+        [ new THREE.Vector3(9, 0, 0), new THREE.Vector3(9, 2, 2), new THREE.Vector3(9, 4, 0), new THREE.Vector3(9, 6, 2) ]
+        ];
+
+        // Cubic Bernstein polynomials
+        function bernstein(i, t) {
+        switch(i) {
+            case 0: return (1 - t) * (1 - t) * (1 - t);
+            case 1: return 3 * t * (1 - t) * (1 - t);
+            case 2: return 3 * t * t * (1 - t);
+            case 3: return t * t * t;
         }
-	
-		// Create and add parametric surface function (i.e., parametric geometry) to scene
-		this.functionExtent = 60;
-		var slides = functionExtent/3; //Number of evaluations on first variable
-		var stacks = functionExtent/3; //Number of evaluations on second variable
-		
-		var parametricFunction = planeFunction; // Example 1
-		var parametricFunction = waveFunction;  // Example 2
-		//var parametricFunction = ellipsoidFunction;  // Example 3
-		
-		// Create parametric geometry based on parametric function
-		var graphGeometry = new THREE.ParametricGeometry(parametricFunction, slides, stacks); 
-		
-		// Add it to scene
-		this.scene.add(createMesh(graphGeometry));
+        }
+
+        // Bézier‐surface parametrization on [0,1]×[0,1] with scale factor
+        function bezierSurfaceFunction(u, v) {
+        var pt = new THREE.Vector3(0, 0, 0);
+        var scale = 3; 
+        
+
+        var maxX = 9, minX = 0, maxZ = 6, minZ = 0;
+        var centerX = (maxX + minX) / 2;
+        var centerZ = (maxZ + minZ) / 2;
+        
+        for (var i = 0; i < 4; i++) {
+            var bi = bernstein(i, u);
+            for (var j = 0; j < 4; j++) {
+            var bj = bernstein(j, v);
+            // accumulate weighted control‐point with scale
+            pt.x += controlPoints[i][j].x * bi * bj * scale;
+            pt.y += controlPoints[i][j].y * bi * bj * scale;
+            pt.z += controlPoints[i][j].z * bi * bj * scale;
+            }
+        }
+        
+        // Centramos la superficie (similar a bezierSurfaceCentered)
+        pt.x -= centerX * scale;
+        pt.z -= centerZ * scale;
+        
+        return pt;
+        }
+
+        // Create the mesh with improved centering
+        function createMesh(geom) {
+        // Ya no necesitamos aplicar la traslación ya que la superficie está centrada
+        var mat = new THREE.MeshLambertMaterial({ 
+            color: 0xff5555,
+            side: THREE.DoubleSide,
+            wireframe: false
+        });
+        return THREE.SceneUtils.createMultiMaterialObject(geom, [ mat ]);
+        }
+
+        /**** plug‐in Bézier surface here ****/
+        this.functionExtent = 60;      
+        var slides = functionExtent/3;    // Ajustamos la resolución según functionExtent
+        var stacks = functionExtent/3;    // Ajustamos la resolución según functionExtent
+
+        // Switch from plane/wave/ellipsoid to our Bézier
+        var parametricFunction = bezierSurfaceFunction;
+
+        var graphGeometry = new THREE.ParametricGeometry(
+        parametricFunction,
+        slides,
+        stacks
+        );
+
+        this.scene.add(createMesh(graphGeometry));
 
 		/****************************/
 		
@@ -148,8 +236,6 @@
 		
 	  </script>
       <br>
-	  Note: X axis is red, Y axis is green, Z axis is blue.
-	  Each grid square on the plane Y=0 has size 10x10.
       </body>
 
       </html>
