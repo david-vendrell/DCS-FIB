@@ -1,4 +1,4 @@
- <html> 
+<html> 
       <head> 
       <title>DCS - 5</title> 
 
@@ -32,18 +32,21 @@
         document.body.appendChild(renderer.domElement); // append it to the DOM
 		
         // position and point the camera to the center of the scene (0,0,0)
-        camera.position.x = 50;
-        camera.position.y = 60;
-        camera.position.z = 50;
-        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        camera.position.x = 15;
+        camera.position.y = 20;
+        camera.position.z = 15;
+        camera.lookAt(new THREE.Vector3(0, 3, 8)); // Ajustado para mirar directamente a la conexión entre las canaletas
 
 		// Create light, with same position and direction as camera
         this.spotLight = new THREE.SpotLight(0xffffff);
 		this.spotLight.position.copy(camera.position)
-		this.spotLight.target.position.copy (camera.lookAt); 
+		this.spotLight.target.position.copy(new THREE.Vector3(0, 3, 8)); // Enfocar la luz hacia el mismo punto
         scene.add(spotLight);
+        
+        // Memoization variables for optimization
+        var mem_fact = [1, 1];
+        var mem_bin_coef = {};
 
-		
 		/**** Here is where the important stuff is: definition of parametric geometry ****/
 		// Examples of three parametric surface functions
 
@@ -81,13 +84,95 @@
             var y = c*Math.cos(v);
             return new THREE.Vector3(x, y, z);
 		}
+        
+        /*
+        * Helper functions for Bézier calculations
+        */
+        function factorial(x) {
+            if (x < 0)
+                return -1;
+            else if (mem_fact.length <= x)
+                mem_fact.push(factorial(x-1) * x);
+            return mem_fact[x];
+        }
+
+        function binomialCoefficient(n, k) {
+            if ((k < 0) || (n < 0) || (n < k))
+                return -1;
+            if (!(n in mem_bin_coef))
+                mem_bin_coef[n] = {};
+            if (!(k in mem_bin_coef[n]))
+                mem_bin_coef[n][k] = factorial(n) / (factorial(k) * factorial(n - k));
+            return mem_bin_coef[n][k];
+        }
+
+        function getBasisFunctionNI(n, i) {
+            return function (t) {
+                var binomial = binomialCoefficient(n, i);
+                var t_pow_i = Math.pow(t, i);
+                var mirror_t_pow_i = Math.pow(1 - t, n - i);
+                return binomial * t_pow_i * mirror_t_pow_i;
+            };
+        }
+
+        function pointScale3D(point, scalar) {
+            return {x: point.x * scalar, y: point.y * scalar, z: point.z * scalar};
+        }
+
+        function pointTranslate3D(point, translation) {
+            return {x: point.x + translation.x, y: point.y + translation.y, z: point.z + translation.z};
+        }
+
+        /*
+        * Function to create a Bézier surface based on control points
+        */
+        function bezierSurface(controlPoints) {
+            var m = controlPoints.length - 1;
+            if (m < 0) return function (u, w) {return new THREE.Vector3(0, 0, 0)};
+            var n = controlPoints[0].length - 1;
+
+            return function (u, w) {
+                var point = {x: 0, y: 0, z: 0};
+
+                for (var i = 0; i <= m; i++) {
+                    for (var j = 0; j <= n; j++) {
+                        var bernstein_1 = getBasisFunctionNI(m, i)(u); // Bmi
+                        var bernstein_2 = getBasisFunctionNI(n, j)(w); // Bnj
+                        var current_point = controlPoints[i][j]; // Pij
+                        var pull = pointScale3D(pointScale3D(current_point, bernstein_1), bernstein_2); // Bmi * Bnj * Pij
+                        point = pointTranslate3D(point, pull); // Accumulate pull
+                    }
+                }
+
+                return new THREE.Vector3(point.x, point.y, point.z);
+            }
+        }
+
+        /*
+        * Calculate control points for C1 continuity between surfaces
+        */
+        function calculateContinuityControlPoints(line, prev_guide_line, n, k) {
+            var next_guide_line = [];
+            var m = line.length - 1;
+
+            // For each point in the joint
+            for (var i = 0; i <= m; i++) {
+                var previous_diff = pointTranslate3D(line[i], pointScale3D(prev_guide_line[i], -1)); // Pi,n - Pi,n-1
+                var previous_calc = pointScale3D(previous_diff, n / k); // (n/k) * (Pi,n - Pi,n-1)
+                var next_guide_point = pointTranslate3D(previous_calc, line[i]); //(n/k) * (Pi,n - Pi,n-1) + Pi,n
+                next_guide_line.push(next_guide_point);
+            }
+
+            return next_guide_line;
+        }
 		
-		// Function to create the actual mesh
-        function createMesh(geom) {
-			// Translate geometry to center of scene
-            geom.applyMatrix(new THREE.Matrix4().makeTranslation(-functionExtent/2, 0, -functionExtent/2));
+		// Function to create the actual mesh with custom colors
+        function createMesh(geom, color) {
             // Assign material
-            var meshMaterial = new THREE.MeshLambertMaterial({color:0xff5555, wireframe:false}); // You can disable wireframe
+            var meshMaterial = new THREE.MeshLambertMaterial({
+                color: color || 0xff5555, 
+                wireframe: false
+            });
             meshMaterial.side = THREE.DoubleSide;
             // create a multimaterial and return it
             return THREE.SceneUtils.createMultiMaterialObject(geom, [meshMaterial]);
@@ -95,18 +180,88 @@
 	
 		// Create and add parametric surface function (i.e., parametric geometry) to scene
 		this.functionExtent = 60;
-		var slides = functionExtent/3; //Number of evaluations on first variable
-		var stacks = functionExtent/3; //Number of evaluations on second variable
+		var slides = 20; // Number of evaluations on first variable
+		var stacks = 20; // Number of evaluations on second variable
 		
-		var parametricFunction = planeFunction; // Example 1
-		var parametricFunction = waveFunction;  // Example 2
-		//var parametricFunction = ellipsoidFunction;  // Example 3
-		
-		// Create parametric geometry based on parametric function
-		var graphGeometry = new THREE.ParametricGeometry(parametricFunction, slides, stacks); 
-		
-		// Add it to scene
-		this.scene.add(createMesh(graphGeometry));
+        // Define the control points for the two gutters based on the given specifications
+        // Small gutter profile: cubic Bézier with control points {(-1.5,2), (-1.3,0), (1.3,0), (1.5,2)}
+        // Large gutter profile: cubic Bézier with control points {(-3,3), (-2,-1), (2,-1), (3,3)}
+        // Distance between gutters: 5 units
+        
+        // Create control points for thin gutter (extruded along z-axis)
+        var thinGutterControlPoints = [
+            [{x: -1.5, y: 2, z: 0}, {x: -1.3, y: 0, z: 0}, {x: 1.3, y: 0, z: 0}, {x: 1.5, y: 2, z: 0}],
+            [{x: -1.5, y: 2, z: 2}, {x: -1.3, y: 0, z: 2}, {x: 1.3, y: 0, z: 2}, {x: 1.5, y: 2, z: 2}],
+            [{x: -1.5, y: 2, z: 4}, {x: -1.3, y: 0, z: 4}, {x: 1.3, y: 0, z: 4}, {x: 1.5, y: 2, z: 4}],
+            [{x: -1.5, y: 2, z: 6}, {x: -1.3, y: 0, z: 6}, {x: 1.3, y: 0, z: 6}, {x: 1.5, y: 2, z: 6}]
+        ];
+
+        // Create control points for large gutter (extruded along z-axis)
+        // Positioned 5 units away from the thin gutter (at z=11)
+        var largeGutterControlPoints = [
+            [{x: -3, y: 3, z: 11}, {x: -2, y: -1, z: 11}, {x: 2, y: -1, z: 11}, {x: 3, y: 3, z: 11}],
+            [{x: -3, y: 3, z: 13}, {x: -2, y: -1, z: 13}, {x: 2, y: -1, z: 13}, {x: 3, y: 3, z: 13}],
+            [{x: -3, y: 3, z: 15}, {x: -2, y: -1, z: 15}, {x: 2, y: -1, z: 15}, {x: 3, y: 3, z: 15}],
+            [{x: -3, y: 3, z: 17}, {x: -2, y: -1, z: 17}, {x: 2, y: -1, z: 17}, {x: 3, y: 3, z: 17}]
+        ];
+
+        // Calculate the middle control points for the joint
+        // We'll create two intermediate rows of control points for smooth transition
+        var midPoint1 = [];
+        var midPoint2 = [];
+        
+        // Create intermediate control points for the joint
+        for (var i = 0; i < 4; i++) {
+            var p1 = thinGutterControlPoints[3][i]; // Last row of thin gutter
+            var p2 = largeGutterControlPoints[0][i]; // First row of large gutter
+            
+            // Calculate two intermediate points for smooth transition
+            var t1 = 0.33; // First intermediate point at 1/3
+            var t2 = 0.67; // Second intermediate point at 2/3
+            
+            // Linear interpolation between p1 and p2
+            var mp1 = {
+                x: p1.x + (p2.x - p1.x) * t1,
+                y: p1.y + (p2.y - p1.y) * t1,
+                z: p1.z + (p2.z - p1.z) * t1
+            };
+            
+            var mp2 = {
+                x: p1.x + (p2.x - p1.x) * t2,
+                y: p1.y + (p2.y - p1.y) * t2,
+                z: p1.z + (p2.z - p1.z) * t2
+            };
+            
+            midPoint1.push(mp1);
+            midPoint2.push(mp2);
+        }
+        
+        // Create the joint control points grid (4x4) using C1 continuity
+        var jointControlPoints = [
+            thinGutterControlPoints[3],  // Last row of thin gutter
+            calculateContinuityControlPoints(thinGutterControlPoints[3], thinGutterControlPoints[2], 3, 3),  // First control row for C1 continuity
+            calculateContinuityControlPoints(largeGutterControlPoints[0], largeGutterControlPoints[1], 3, 3), // Second control row for C1 continuity
+            largeGutterControlPoints[0]  // First row of large gutter
+        ];
+
+        // Create parametric functions for each surface
+        var thinGutterParametricFunction = bezierSurface(thinGutterControlPoints);
+        var largeGutterParametricFunction = bezierSurface(largeGutterControlPoints);
+        var jointParametricFunction = bezierSurface(jointControlPoints);
+        
+        // Increase resolution for the joint to make it smoother
+        var jointSlides = slides * 2;
+        var jointStacks = stacks * 2;
+        
+        // Create geometries based on the parametric functions
+        var thinGutterGeometry = new THREE.ParametricGeometry(thinGutterParametricFunction, slides, stacks);
+        var largeGutterGeometry = new THREE.ParametricGeometry(largeGutterParametricFunction, slides, stacks);
+        var jointGeometry = new THREE.ParametricGeometry(jointParametricFunction, jointSlides, jointStacks);
+        
+        // Add the meshes to the scene with different colors
+        this.scene.add(createMesh(thinGutterGeometry, 0x8866ff));  // Purple for thin gutter
+        this.scene.add(createMesh(largeGutterGeometry, 0xff6688));  // Pink for large gutter
+        this.scene.add(createMesh(jointGeometry, 0x66aaff));       // Blue for joint
 
 		/****************************/
 		
@@ -133,7 +288,7 @@
         this.orbitControls.enableDamping = true;
         this.orbitControls.dampingFactor = 1.0;
         this.orbitControls.enableZoom    = true;
-        this.orbitControls.target.copy(new THREE.Vector3(0, 0, 0));
+        this.orbitControls.target.copy(new THREE.Vector3(0, 3, 8)); // Establecer el punto focal del control orbital
 
         // This is the basic render function. It will be called perpetual, again and again,
         // depending on your machines possible frame rate.
