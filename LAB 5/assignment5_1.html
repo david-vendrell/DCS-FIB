@@ -85,41 +85,41 @@
 
         // Bézier‐surface parametrization on [0,1]×[0,1] with scale factor
         function bezierSurfaceFunction(u, v) {
-        var pt = new THREE.Vector3(0, 0, 0);
-        var scale = 3; 
-        
+            var pt = new THREE.Vector3(0, 0, 0);
+            var scale = 3; 
+            
 
-        var maxX = 9, minX = 0, maxZ = 6, minZ = 0;
-        var centerX = (maxX + minX) / 2;
-        var centerZ = (maxZ + minZ) / 2;
-        
-        for (var i = 0; i < 4; i++) {
-            var bi = bernstein(i, u);
-            for (var j = 0; j < 4; j++) {
-            var bj = bernstein(j, v);
-            // accumulate weighted control‐point with scale
-            pt.x += controlPoints[i][j].x * bi * bj * scale;
-            pt.y += controlPoints[i][j].y * bi * bj * scale;
-            pt.z += controlPoints[i][j].z * bi * bj * scale;
+            var maxX = 9, minX = 0, maxZ = 6, minZ = 0;
+            var centerX = (maxX + minX) / 2;
+            var centerZ = (maxZ + minZ) / 2;
+            
+            for (var i = 0; i < 4; i++) {
+                var bi = bernstein(i, u);
+                for (var j = 0; j < 4; j++) {
+                var bj = bernstein(j, v);
+                // accumulate weighted control‐point with scale
+                pt.x += controlPoints[i][j].x * bi * bj * scale;
+                pt.y += controlPoints[i][j].y * bi * bj * scale;
+                pt.z += controlPoints[i][j].z * bi * bj * scale;
+                }
             }
-        }
-        
-        // Centramos la superficie (similar a bezierSurfaceCentered)
-        pt.x -= centerX * scale;
-        pt.z -= centerZ * scale;
-        
-        return pt;
+            
+            // Centramos la superficie (similar a bezierSurfaceCentered)
+            pt.x -= centerX * scale;
+            pt.z -= centerZ * scale;
+            
+            return pt;
         }
 
         // Create the mesh with improved centering
         function createMesh(geom) {
-        // Ya no necesitamos aplicar la traslación ya que la superficie está centrada
-        var mat = new THREE.MeshLambertMaterial({ 
-            color: 0xff5555,
-            side: THREE.DoubleSide,
-            wireframe: false
-        });
-        return THREE.SceneUtils.createMultiMaterialObject(geom, [ mat ]);
+            // Ya no necesitamos aplicar la traslación ya que la superficie está centrada
+            var mat = new THREE.MeshLambertMaterial({ 
+                color: 0xff5555,
+                side: THREE.DoubleSide,
+                wireframe: false
+            });
+            return THREE.SceneUtils.createMultiMaterialObject(geom, [ mat ]);
         }
 
         /**** plug‐in Bézier surface here ****/
@@ -131,9 +131,9 @@
         var parametricFunction = bezierSurfaceFunction;
 
         var graphGeometry = new THREE.ParametricGeometry(
-        parametricFunction,
-        slides,
-        stacks
+            parametricFunction,
+            slides,
+            stacks
         );
 
         this.scene.add(createMesh(graphGeometry));
@@ -173,10 +173,80 @@
             this.renderer.render(this.scene, this.camera);
         };
 
+        // Array para almacenar referencias a los marcadores de puntos de control
+        var controlPointMarkers = [];
+        var controlPointsVisible = true;
+        
+        // Función para crear marcadores para los puntos de control
+        function addControlPointMarkers() {
+            // Tamaño del marcador
+            const markerSize = 0.3;
+            
+            // Crear un marcador para cada punto de control
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    // Obtener la posición del punto de control
+                    const point = controlPoints[i][j].clone();
+                    
+                    // Ajustar la posición para que coincida con la superficie centrada
+                    const maxX = 9, minX = 0, maxZ = 6, minZ = 0;
+                    const centerX = (maxX + minX) / 2;
+                    const centerZ = (maxZ + minZ) / 2;
+                    point.x = (point.x - centerX) * 3;
+                    point.z = (point.z - centerZ) * 3;
+                    point.y = point.y * 3;
+                    
+                    // Crear la geometría de la esfera
+                    const markerGeometry = new THREE.SphereGeometry(markerSize, 16, 16);
+                    
+                    // Crear un color específico basado en la posición del punto de control
+                    let markerColor;
+                    if ((i === 0 || i === 3) && (j === 0 || j === 3)) {
+                        markerColor = new THREE.Color(0xff5500); // Naranja para esquinas
+                    } else if (i === 0 || i === 3 || j === 0 || j === 3) {
+                        markerColor = new THREE.Color(0xffaa00); // Amarillo para bordes
+                    } else {
+                        markerColor = new THREE.Color(0x00aaff); // Azul para puntos interiores
+                    }
+                    
+                    const material = new THREE.MeshLambertMaterial({ color: markerColor });
+                    const marker = new THREE.Mesh(markerGeometry, material);
+                    marker.position.copy(point);
+                    scene.add(marker);
+                    
+                    // Almacenar referencia al marcador para poder cambiar su visibilidad
+                    controlPointMarkers.push(marker);
+                }
+            }
+        }
+        
+        // Función para alternar la visibilidad de los puntos de control
+        function toggleControlPoints() {
+            controlPointsVisible = !controlPointsVisible;
+            
+            // Actualizar la visibilidad de todos los marcadores
+            for (let i = 0; i < controlPointMarkers.length; i++) {
+                controlPointMarkers[i].visible = controlPointsVisible;
+            }
+            
+            // Actualizar el texto del botón
+            document.getElementById('toggleButton').textContent = 
+                controlPointsVisible ? 'Ocultar Puntos de Control' : 'Mostrar Puntos de Control';
+        }
+        
+        // Añadir los marcadores de puntos de control
+        addControlPointMarkers();
+
         // Call the rendering function. This will cause an infinite recursion
         this._render();
 		
 	  </script>
+      
+      <br>
+      <div style="padding: 0 10px; text-align: center; margin-top: 10px;">
+        <button id="toggleButton" onclick="toggleControlPoints()">Ocultar Puntos de Control</button>
+      </div>
+      
       <br>
       <div style="position: absolute; top: 100px; right: 20px; width: 700px; background-color: rgba(255, 255, 255, 0.8); padding: 20px; border-radius: 10px; border: 1px solid #ccc; font-size: 14px; max-height: 80%; overflow-y: auto;">
         <h2 style="margin-top: 0;">Bézier Surface Implementation</h2>
@@ -192,6 +262,14 @@
           P<sub>2,0</sub> = (6,0,3), P<sub>2,1</sub> = (6,2,5), P<sub>2,2</sub> = (6,4,3), P<sub>2,3</sub> = (6,6,3)<br>
           P<sub>3,0</sub> = (9,0,0), P<sub>3,1</sub> = (9,2,2), P<sub>3,2</sub> = (9,4,0), P<sub>3,3</sub> = (9,6,2)
         </div>
+        
+        <h3>Control Point Visualization:</h3>
+        <p>Control points are marked on the surface with colored spheres:</p>
+        <ul style="list-style-type: none;">
+          <li><span style="display: inline-block; width: 15px; height: 15px; background-color: #ff5500; border-radius: 50%; margin-right: 10px;"></span> <strong>Orange:</strong> Corner control points (interpolated by the surface)</li>
+          <li><span style="display: inline-block; width: 15px; height: 15px; background-color: #ffaa00; border-radius: 50%; margin-right: 10px;"></span> <strong>Yellow:</strong> Edge control points</li>
+          <li><span style="display: inline-block; width: 15px; height: 15px; background-color: #00aaff; border-radius: 50%; margin-right: 10px;"></span> <strong>Blue:</strong> Interior control points</li>
+        </ul>
         
         <h3>Mathematical Formulation:</h3>
         <p>The Bézier surface is calculated using the formula:</p>
